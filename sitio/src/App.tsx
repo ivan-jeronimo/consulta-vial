@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { obtenerContenido, type ContenidoSitio } from './api'
 import { ModalGanadores } from './components/ModalGanadores'
 import { EnlacesRedes, SeguidoresPorRed } from './components/Redes'
-import { Colaboraciones, Dinamicas, Ganadores, Juego, Videos } from './components/Secciones'
+import { Reto } from './components/Reto'
+import { Colaboraciones, Dinamicas, Ganadores, Videos } from './components/Secciones'
 import { VisorFoto, type EstadoVisor } from './components/VisorFoto'
 import { compacto } from './formato'
 
@@ -20,6 +21,13 @@ export default function App() {
   useEffect(() => {
     obtenerContenido().then(setContenido).catch(() => setError(true))
   }, [])
+
+  // Las secciones aparecen después de cargar: el navegador no alcanza a bajar al #ancla
+  // (p. ej. al volver del login de Facebook a /#reto). Se hace a mano una vez.
+  useEffect(() => {
+    const ancla = /^#([a-z]+)$/.exec(location.hash)?.[1]
+    if (contenido && ancla) requestAnimationFrame(() => document.getElementById(ancla)?.scrollIntoView())
+  }, [contenido])
 
   useEffect(() => {
     const hash = dinamicaAbierta ? `#dinamica-${dinamicaAbierta}` : ''
@@ -113,7 +121,7 @@ export default function App() {
           <>
             <Videos videos={contenido.videos} />
             <Dinamicas dinamicas={contenido.dinamicas} onVerGanadores={setDinamicaAbierta} />
-            <Juego />
+            <Reto />
             <Colaboraciones colaboraciones={contenido.colaboraciones} />
             {/* Al final, justo antes del pie: la lista crece con cada dinámica. */}
             <Ganadores

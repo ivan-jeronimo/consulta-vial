@@ -107,3 +107,12 @@ docker compose exec app php artisan test     # usa la BD consulta_vial_test, emb
 Para consultar desde el bot:
 `ReglamentoArticulo::aplicableA($estadoId, $municipioId)->whereVectorSimilarTo('embedding', $vector)`
 devuelve la normativa federal, estatal y municipal aplicable, solo de documentos vigentes y ya procesados.
+
+## Reto del asfalto (simulador del examen de manejo)
+
+En el sitio, sección "El reto". Se entra con Facebook (app "Andantes del Asfalto": `FACEBOOK_APP_ID`/`FACEBOOK_APP_SECRET`); la app debe tener `SITIO_URL/auth/facebook/callback` en "URI de redireccionamiento de OAuth válidos".
+
+- **Preguntas:** panel "Reto > Preguntas". "Generar preguntas" (o `php artisan reto:generar-preguntas --lotes=N`) usa el LLM sobre la guía de examen o un reglamento y deja borradores; solo se juegan las **aprobadas** (mínimo 5).
+- **Partida:** 10 preguntas al azar, 20 s cada una; 100 puntos por acierto + hasta 50 por rapidez. El servidor guarda la respuesta correcta, el orden de las opciones y el tiempo.
+- **Ranking mensual:** la mejor partida del mes de cada jugador que aceptó aparecer con su nombre y foto.
+- **Privacidad:** el jugador puede ocultarse del ranking y "Borrar mis datos" (cuenta, partidas y foto). En el panel, "Reto > Jugadores".

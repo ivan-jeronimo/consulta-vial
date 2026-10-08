@@ -14,10 +14,11 @@ export default defineConfig(({ mode }) => {
       // En Docker sobre Windows los cambios no llegan como eventos del sistema
       // de archivos: se revisan cada cierto tiempo para la recarga en vivo.
       watch: env.VITE_USAR_POLLING ? { usePolling: true, interval: 300 } : undefined,
-      // /api y las imágenes subidas desde el panel (/storage) vienen de Laravel.
+      // /api, las imágenes subidas desde el panel (/storage) y el login con Facebook (/auth) son de Laravel.
       proxy: {
         '/api': laravel,
         '/storage': laravel,
+        '/auth': laravel,
       },
     },
   }

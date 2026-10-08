@@ -42,6 +42,12 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // Jugadores del reto (entran con Facebook); separados de los administradores.
+        'jugador' => [
+            'driver' => 'session',
+            'provider' => 'jugadores',
+        ],
     ],
 
     /*
@@ -65,6 +71,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'jugadores' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Jugador::class,
         ],
 
         // 'users' => [

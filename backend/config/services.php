@@ -38,6 +38,9 @@ return [
         'graph_version' => env('FACEBOOK_GRAPH_VERSION', 'v26.0'),
         // Antigüedad máxima de videos y publicaciones que se sincronizan.
         'meses' => (int) env('FACEBOOK_MESES', 12),
+        // Donde vive el sitio de la comunidad. El login regresa a SITIO_URL/auth/facebook/callback:
+        // esa dirección exacta debe estar en "URI de redireccionamiento de OAuth válidos" de la app.
+        'sitio_url' => env('SITIO_URL', 'http://localhost:5174'),
     ],
 
     // YouTube Data API v3 (clave de Google Cloud): suscriptores del canal en url_youtube.

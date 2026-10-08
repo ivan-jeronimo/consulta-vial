@@ -2,8 +2,6 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Colaboracion, Dinamica, EstatusDinamica, Ganador, Video } from '../api'
 import { compacto, fecha, iniciales } from '../formato'
 
-// El chat vial vive aparte (frontend/, marca blanca); aquí solo se enlaza.
-const URL_CHAT: string = import.meta.env.VITE_URL_CHAT ?? 'http://localhost:5173'
 
 function Seccion({ id, titulo, acciones, children, oscura = false }: { id: string; titulo: string; acciones?: ReactNode; children: ReactNode; oscura?: boolean }) {
   return (
@@ -284,27 +282,6 @@ export function Dinamicas({ dinamicas, onVerGanadores }: { dinamicas: Dinamica[]
   )
 }
 
-export function Juego() {
-  return (
-    <Seccion id="reto" titulo="El reto del asfalto" oscura>
-      <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
-        <div>
-          <p className="max-w-xl text-stone-300">
-            Muy pronto: pon a prueba lo que sabes del reglamento con preguntas tipo examen de manejo, suma puntos, sube en el
-            ranking y gana boletos para las dinámicas.
-          </p>
-          <p className="mt-3 text-sm text-stone-400">Mientras tanto, pregúntale al asistente vial lo que quieras del reglamento.</p>
-        </div>
-        <a
-          href={URL_CHAT}
-          className="justify-self-start rounded-full bg-linea px-6 py-3 font-bold text-asfalto-900 hover:bg-yellow-300"
-        >
-          Preguntar al asistente
-        </a>
-      </div>
-    </Seccion>
-  )
-}
 
 export function Avatar({ ganador, className = 'size-12' }: { ganador: Ganador; className?: string }) {
   return ganador.foto ? (
