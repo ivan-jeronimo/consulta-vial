@@ -1,6 +1,9 @@
 <?php
 
+use App\Enums\TipoDocumento;
+use App\Models\DocumentoReglamento;
 use App\Services\Facebook\SincronizadorFacebook;
+use App\Services\Reto\GeneradorPreguntas;
 use App\Services\Redes\SincronizadorYoutube;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
@@ -24,6 +27,17 @@ Artisan::command('sitio:sincronizar', function (SincronizadorFacebook $facebook,
         ));
     }
 })->purpose('Trae seguidores (Facebook, Instagram, YouTube), videos y publicaciones con #dinamica');
+
+Artisan::command('reto:generar-preguntas {documento? : id; por omisión la guía de examen} {--capitulo=} {--lotes=3}', function (GeneradorPreguntas $generador) {
+    $documento = $this->argument('documento')
+        ? DocumentoReglamento::findOrFail($this->argument('documento'))
+        : DocumentoReglamento::consultable()->where('tipo', TipoDocumento::Manual)->firstOrFail();
+
+    $creadas = $generador->generar($documento, $this->option('capitulo'), (int) $this->option('lotes'));
+
+    $this->info("{$creadas} preguntas nuevas en borrador de «{$documento->titulo}». Quedan "
+        .$generador->pendientes($documento, $this->option('capitulo'))->count().' fragmentos sin usar.');
+})->purpose('Genera preguntas del reto con el LLM (quedan como borrador para revisarlas en el panel)');
 
 Schedule::command('sitio:sincronizar')
     ->everySixHours()
