@@ -50,6 +50,8 @@ export interface ResultadoRespuesta {
   terminada: boolean
   siguiente: PreguntaJuego | null
   mes: ResumenMes | null
+  /** Enlace para compartir (solo al terminar). */
+  compartir: string | null
 }
 
 export class ErrorReto extends Error {

@@ -19,6 +19,8 @@ export default defineConfig(({ mode }) => {
         '/api': laravel,
         '/storage': laravel,
         '/auth': laravel,
+        // Enlaces para compartir el resultado del reto (/r/{partida}).
+        '^/r/': laravel,
       },
     },
   }

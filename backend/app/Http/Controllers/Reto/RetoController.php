@@ -83,6 +83,7 @@ class RetoController extends Controller
             ...$resultado,
             'siguiente' => $this->juego->preguntaActual($partida),
             'mes' => $resultado['terminada'] ? $this->juego->resumenDelMes($partida->jugador) : null,
+            'compartir' => $resultado['terminada'] ? rtrim((string) config('services.facebook.sitio_url'), '/')."/r/{$partida->id}" : null,
         ]);
     }
 

@@ -35,6 +35,14 @@ class FacebookAuthController extends Controller
             return $this->volver('cancelado'); // la persona no aceptó en Facebook
         }
         if (! $state || ! hash_equals($state, (string) $request->query('state')) || ! $request->filled('code')) {
+            // Sin state en la sesión casi siempre es que se abrió el sitio en otra dirección
+            // (127.0.0.1, IP de la red) que la de SITIO_URL: el navegador no manda la cookie.
+            Log::warning('Inicio de sesión con Facebook rechazado', [
+                'motivo' => ! $state ? 'sin state en la sesión' : ($request->filled('code') ? 'state distinto' : 'sin code'),
+                'host' => $request->getHttpHost(),
+                'sitio_url' => config('services.facebook.sitio_url'),
+            ]);
+
             return $this->volver('error');
         }
 

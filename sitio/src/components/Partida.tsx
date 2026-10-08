@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ErrorReto, reto, type PreguntaJuego, type ResultadoRespuesta } from '../reto'
+import { CompartirResultado } from './Compartir'
 
 type Fase =
   | { tipo: 'cargando' }
@@ -231,6 +232,10 @@ function Final({ resultado, total, onOtra, onCerrar }: { resultado: ResultadoRes
             </>
           )}
         </p>
+      )}
+
+      {resultado.compartir && (
+        <CompartirResultado url={resultado.compartir} puntos={resultado.puntos_partida} aciertos={resultado.aciertos} total={total} />
       )}
 
       <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
