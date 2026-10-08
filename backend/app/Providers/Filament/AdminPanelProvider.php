@@ -5,7 +5,6 @@ namespace App\Providers\Filament;
 use App\Filament\Pages\Dashboard;
 use App\Filament\Widgets\ConsultasPorDia;
 use App\Filament\Widgets\ConsultasPorUbicacion;
-use App\Filament\Widgets\EstadoFacebook;
 use App\Filament\Widgets\IngestaStats;
 use App\Filament\Widgets\ResumenConsultas;
 use App\Filament\Widgets\TemasMasConsultados;
@@ -43,7 +42,6 @@ class AdminPanelProvider extends PanelProvider
                 Dashboard::class,
             ])
             ->widgets([
-                EstadoFacebook::class,
                 ResumenConsultas::class,
                 ConsultasPorDia::class,
                 ConsultasPorUbicacion::class,

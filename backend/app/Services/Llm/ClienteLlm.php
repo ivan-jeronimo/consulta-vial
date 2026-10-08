@@ -8,7 +8,7 @@ use RuntimeException;
 
 /**
  * Llamada de texto al LLM configurado (LLM_PROVIDER) con modelos de respaldo.
- * La usan las respuestas del bot y la generación de preguntas del reto.
+ * La usan las respuestas del bot.
  */
 class ClienteLlm
 {

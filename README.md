@@ -4,8 +4,7 @@
 backend/          Laravel 13 (API + panel admin + workers de ingesta)
 docker/           Dockerfile PHP 8.3, nginx, init de Postgres
 frontend/         Chat vial (marca blanca)
-sitio/            Sitio de la comunidad Andantes del Asfalto
-docker-compose.yml  app (php-fpm) · nginx :8000 (API y panel) · frontend :5173 · sitio :5174 · worker (cola "ingesta") · postgres pgvector:pg16 · redis
+docker-compose.yml  app (php-fpm) · nginx :8000 (API y panel) · frontend :5173 · worker (cola "ingesta") · postgres pgvector:pg16 · redis
 ```
 
 ## Arranque
@@ -52,17 +51,6 @@ React + TypeScript + Vite 6 + Tailwind 4. Arranca con el resto del stack (`docke
 - Build de producción: `docker compose exec frontend npm run build` (genera `dist/`).
 - Ver errores de Vite: `docker compose logs -f frontend`.
 
-## Sitio de la comunidad (`sitio/`)
-
-Página de Andantes del Asfalto en **http://localhost:5174** (mismo esquema que `frontend/`: React + Vite + Tailwind en Docker, servicio `sitio`). El chat de `frontend/` se queda sin marca y el sitio solo lo enlaza (`URL_CHAT`, por defecto `http://localhost:5173`).
-
-- Contenido: en el panel, grupo **Sitio Andantes** (videos destacados, dinámicas, ganadores, colaboraciones y ajustes como seguidores, lema y enlace de Facebook).
-- Los ganadores solo se publican si tienen marcado "Aceptó aparecer en el sitio".
-- **Sincronización** (`php artisan sitio:sincronizar`, la corre el servicio `scheduler` cada 6 horas; también hay botón "Sincronizar ahora" en Videos). Trae seguidores de Facebook, Instagram (si es profesional y está vinculado a la página; requiere `instagram_basic` en el token) y YouTube (`YOUTUBE_API_KEY` + canal en Ajustes), logo, portada, videos y reels de los últimos `FACEBOOK_MESES` (12) con sus reproducciones, y las publicaciones con `#dinamica` a una bandeja donde eliges "Crear dinámica" o "Ignorar". Respeta lo editado en el panel (título, fijado, visible). Si falla, el panel lo muestra en "Redes sociales".
-- TikTok no tiene API práctica: sus seguidores se capturan a mano en Ajustes. El sitio suma todas las redes.
-- Variables en `backend/.env`: `FACEBOOK_PAGE_ID` y `FACEBOOK_PAGE_TOKEN` (token de página que no caduca, sacado de la app "Andantes Contenido", que se queda en modo desarrollo). `FACEBOOK_APP_ID`/`FACEBOOK_APP_SECRET` son de la app de inicio de sesión.
-- API: `GET /api/sitio` devuelve todo el contenido en una sola respuesta. Las imágenes se sirven en `/storage/...`, así que necesitas `php artisan storage:link` una sola vez.
-
 ## Consulta del bot
 
 `POST /api/consulta` (público, 20 peticiones por minuto por IP):
@@ -108,11 +96,14 @@ Para consultar desde el bot:
 `ReglamentoArticulo::aplicableA($estadoId, $municipioId)->whereVectorSimilarTo('embedding', $vector)`
 devuelve la normativa federal, estatal y municipal aplicable, solo de documentos vigentes y ya procesados.
 
-## Reto del asfalto (simulador del examen de manejo)
 
-En el sitio, sección "El reto". Se entra con Facebook (app "Andantes del Asfalto": `FACEBOOK_APP_ID`/`FACEBOOK_APP_SECRET`); la app debe tener `SITIO_URL/auth/facebook/callback` en "URI de redireccionamiento de OAuth válidos".
+## API de fuentes (`Authorization: Bearer <token de cliente>`)
 
-- **Preguntas:** panel "Reto > Preguntas". "Generar preguntas" (o `php artisan reto:generar-preguntas --lotes=N`) usa el LLM sobre la guía de examen o un reglamento y deja borradores; solo se juegan las **aprobadas** (mínimo 5).
-- **Partida:** 10 preguntas al azar, 20 s cada una; 100 puntos por acierto + hasta 50 por rapidez. El servidor guarda la respuesta correcta, el orden de las opciones y el tiempo.
-- **Ranking mensual:** la mejor partida del mes de cada jugador que aceptó aparecer con su nombre y foto.
-- **Privacidad:** el jugador puede ocultarse del ranking y "Borrar mis datos" (cuenta, partidas y foto). En el panel, "Reto > Jugadores".
+Solo lectura del texto de la normativa vigente, para sistemas cliente. Cada cliente tiene su token en `FUENTES_API_TOKENS` (separados por coma), así se puede revocar uno sin afectar a los demás. No da acceso a la API de administración.
+
+| Método | Ruta | |
+|---|---|---|
+| GET | `/api/fuentes/documentos` | documentos vigentes y procesados, con sus capítulos |
+| GET | `/api/fuentes/documentos/{id}/fragmentos?capitulo=` | fragmentos en orden (`id, orden, capitulo, seccion, articulo, fraccion, inciso, contenido`) |
+
+Primer cliente: el sitio de **Andantes del Asfalto** (proyecto aparte, `C:\Desarrollo\andantes`), que genera las preguntas de su simulador de examen con la guía y los reglamentos.

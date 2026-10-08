@@ -11,6 +11,6 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([CatalogoTerritorialSeeder::class, AjustesSitioSeeder::class]);
+        $this->call(CatalogoTerritorialSeeder::class);
     }
 }

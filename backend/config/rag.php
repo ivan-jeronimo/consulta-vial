@@ -4,6 +4,10 @@ return [
 
     'admin_token' => env('ADMIN_API_TOKEN'),
 
+    // Clientes de la API de fuentes (solo lectura de documentos y su texto), separados por coma.
+    // Uno por cliente para poder revocarlos por separado (p. ej. el sitio Andantes del Asfalto).
+    'fuentes_tokens' => array_values(array_filter(array_map('trim', explode(',', (string) env('FUENTES_API_TOKENS', ''))))),
+
     'ingesta' => [
         'disk' => env('REGLAMENTOS_DISK', 'local'),
         'directorio' => 'reglamentos',

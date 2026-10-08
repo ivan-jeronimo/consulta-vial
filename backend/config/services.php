@@ -28,26 +28,6 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-    // Dos apps de Meta: la de inicio de sesión (pública) y la que lee el
-    // contenido de la página (se queda en modo desarrollo; solo da el token).
-    'facebook' => [
-        'app_id' => env('FACEBOOK_APP_ID'),
-        'app_secret' => env('FACEBOOK_APP_SECRET'),
-        'page_id' => env('FACEBOOK_PAGE_ID'),
-        'page_token' => env('FACEBOOK_PAGE_TOKEN'),
-        'graph_version' => env('FACEBOOK_GRAPH_VERSION', 'v26.0'),
-        // Antigüedad máxima de videos y publicaciones que se sincronizan.
-        'meses' => (int) env('FACEBOOK_MESES', 12),
-        // Donde vive el sitio de la comunidad. El login regresa a SITIO_URL/auth/facebook/callback:
-        // esa dirección exacta debe estar en "URI de redireccionamiento de OAuth válidos" de la app.
-        'sitio_url' => env('SITIO_URL', 'http://localhost:5174'),
-    ],
-
-    // YouTube Data API v3 (clave de Google Cloud): suscriptores del canal en url_youtube.
-    'youtube' => [
-        'key' => env('YOUTUBE_API_KEY'),
-    ],
-
     'slack' => [
         'notifications' => [
             'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
