@@ -74,4 +74,16 @@ return [
         ],
     ],
 
+    // Límites del chat público: cada pregunta cuesta una llamada al LLM y otra
+    // de embeddings. Se reinician a medianoche. 0 = sin límite.
+    'limites' => [
+        // Por navegador (id anónimo del visitante; sin id, por conexión).
+        'por_persona_al_dia' => (int) env('CONSULTA_LIMITE_PERSONA', 5),
+        // Por conexión: respaldo si alguien borra su id. Más alto porque
+        // varias personas pueden compartir IP (datos móviles, una oficina).
+        'por_ip_al_dia' => (int) env('CONSULTA_LIMITE_IP', 30),
+        // Tope de todo el servicio, para no pasar de la cuota del LLM.
+        'total_al_dia' => (int) env('CONSULTA_LIMITE_TOTAL', 500),
+    ],
+
 ];

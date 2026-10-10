@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Consulta;
 use App\Models\DocumentoReglamento;
 use App\Models\Estado;
 use App\Models\Municipio;
@@ -226,5 +227,34 @@ class ConsultaTest extends TestCase
         $this->postJson('/api/consulta', ['municipio' => 'Springfield', 'pregunta' => 'vuelta a la derecha'])
             ->assertUnprocessable()
             ->assertJsonValidationErrors('municipio');
+    }
+
+    public function test_limite_diario_por_persona_y_origen_del_chat(): void
+    {
+        config(['rag.llm.anthropic.key' => null, 'rag.limites.por_persona_al_dia' => 2, 'rag.limites.total_al_dia' => 3]);
+        $ana = '0b2f7a6e-5c1d-4e8b-9a3f-2d6c8e1f4a7b';
+        $pregunta = fn (string $visitante) => [
+            'municipio' => 'Oaxaca de Juárez', 'estado' => 'Oaxaca', 'pregunta' => '¿Puedo dar vuelta a la derecha?',
+            'visitante' => $visitante, 'origen' => 'andantes',
+        ];
+
+        $this->postJson('/api/consulta', $pregunta($ana))->assertOk();
+        $this->postJson('/api/consulta', $pregunta($ana))->assertOk();
+        $this->postJson('/api/consulta', $pregunta($ana))
+            ->assertTooManyRequests()
+            ->assertJsonPath('message', 'Llegaste al límite de 2 preguntas por hoy. Vuelve mañana para seguir preguntando.');
+
+        // Otra persona sí puede, hasta que se acaba el tope de todo el servicio.
+        $this->postJson('/api/consulta', $pregunta('7c9e6679-7425-40de-944b-e07fc1f90ae7'))->assertOk();
+        $this->postJson('/api/consulta', $pregunta('9b2f8c1d-1111-4e8b-9a3f-2d6c8e1f4a7b'))
+            ->assertTooManyRequests()
+            ->assertJsonPath('message', 'El asistente ya respondió todas las preguntas que puede por hoy. Vuelve mañana.');
+
+        $this->assertSame(['andantes'], Consulta::pluck('origen')->unique()->values()->all());
+        $this->assertSame(3, Consulta::count());
+
+        // Al día siguiente se reinicia.
+        $this->travel(1)->days();
+        $this->postJson('/api/consulta', $pregunta($ana))->assertOk();
     }
 }

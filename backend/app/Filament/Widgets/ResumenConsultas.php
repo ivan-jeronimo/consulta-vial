@@ -3,6 +3,7 @@
 namespace App\Filament\Widgets;
 
 use App\Filament\Widgets\Concerns\FiltraConsultas;
+use App\Models\Consulta;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\DB;
@@ -39,7 +40,18 @@ class ResumenConsultas extends StatsOverviewWidget
         $periodo = "Últimos {$this->dias()} días";
         $pct = fn ($parte, $total) => $total > 0 ? round(100 * $parte / $total).' %' : '—';
 
+        // Hoy, por sitio: cuánto del tope diario se lleva gastado (cada consulta = una llamada al LLM).
+        $hoy = Consulta::query()->whereDate('created_at', today())
+            ->selectRaw("coalesce(origen, 'directo') as sitio, count(*) as total")
+            ->groupBy('sitio')
+            ->pluck('total', 'sitio');
+        $tope = (int) config('rag.limites.total_al_dia');
+
         return [
+            Stat::make('Consultas de hoy', number_format($hoy->sum()).($tope ? " de {$tope}" : ''))
+                ->description($hoy->isEmpty() ? 'Sin consultas todavía' : $hoy->map(fn ($n, $sitio) => "{$sitio}: {$n}")->implode(' · '))
+                ->color($tope && $hoy->sum() >= 0.8 * $tope ? 'warning' : 'gray'),
+
             Stat::make('Consultas', number_format($r->total))
                 ->description($periodo)
                 ->chart($porDia->values()->all() ?: [0])

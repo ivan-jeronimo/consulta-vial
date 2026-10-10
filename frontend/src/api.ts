@@ -1,3 +1,5 @@
+import { origen } from './incrustado'
+
 export type Nivel = 'federal' | 'estatal' | 'municipal'
 export type TipoDocumento = 'reglamento' | 'ley' | 'manual' | 'otro'
 
@@ -75,7 +77,11 @@ async function pedir<T>(url: string, init?: RequestInit): Promise<T> {
   }
 
   if (respuesta.status === 429) {
-    throw new ErrorConsulta('Hiciste muchas consultas seguidas. Espera un minuto e inténtalo de nuevo.')
+    // El límite diario trae su propio mensaje; el de por minuto, no.
+    const cuerpo = await respuesta.json().catch(() => null)
+    throw new ErrorConsulta(
+      cuerpo?.limite_diario ? cuerpo.message : 'Hiciste muchas consultas seguidas. Espera un minuto e inténtalo de nuevo.',
+    )
   }
 
   if (respuesta.status === 422) {
@@ -99,6 +105,7 @@ export function consultar(pregunta: string, ubicacion: Ubicacion): Promise<Respu
       estado_id: ubicacion.estadoId,
       municipio_id: ubicacion.municipioId,
       visitante: idVisitante(),
+      origen,
     }),
   })
 }

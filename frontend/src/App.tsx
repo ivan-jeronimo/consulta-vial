@@ -3,6 +3,7 @@ import { consultar, ErrorConsulta, obtenerCobertura, type Cobertura, type Ubicac
 import { CampoPregunta } from './components/CampoPregunta'
 import { VistaMensaje, type Mensaje } from './components/Mensaje'
 import { SelectorUbicacion } from './components/SelectorUbicacion'
+import { estadoInicial, incrustado, marca } from './incrustado'
 
 const CLAVE_UBICACION = 'consulta-vial:ubicacion'
 
@@ -131,6 +132,14 @@ export default function App() {
                 Información orientativa basada en los reglamentos publicados. No sustituye asesoría legal.
                 Tus preguntas se guardan de forma anónima para mejorar el servicio.
               </p>
+              {incrustado && (
+                <p className="mt-1 text-center text-[11px] text-stone-400">
+                  Con tecnología de{' '}
+                  <a href={location.origin} target="_blank" rel="noopener" className="font-semibold text-stone-500 hover:text-stone-700">
+                    Consulta Vial
+                  </a>
+                </p>
+              )}
             </div>
           </>
         )}
@@ -142,11 +151,16 @@ export default function App() {
 function Encabezado({ ubicacion, onCambiar }: { ubicacion: string | null; onCambiar: () => void }) {
   return (
     <header className="sticky top-0 z-10 border-b border-stone-200 bg-white/85 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-3xl items-center justify-between gap-3 px-4">
-        <a href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <img src="/icono.svg" alt="" className="size-7" />
-          Consulta Vial
-        </a>
+      <div className={`mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 ${incrustado ? 'h-12' : 'h-14'}`}>
+        {incrustado ? (
+          // Dentro de otro sitio: sin logo ni enlace (abriría Consulta Vial dentro del iframe).
+          <span className="truncate text-sm font-semibold tracking-tight">{marca}</span>
+        ) : (
+          <a href="/" className="flex items-center gap-2 font-semibold tracking-tight">
+            <img src="/icono.svg" alt="" className="size-7" />
+            Consulta Vial
+          </a>
+        )}
         {ubicacion && (
           <button
             type="button"
@@ -167,7 +181,7 @@ function Encabezado({ ubicacion, onCambiar }: { ubicacion: string | null; onCamb
 
 function Bienvenida({ lugar, onEjemplo }: { lugar: string; onEjemplo: (pregunta: string) => void }) {
   return (
-    <div className="pt-6 sm:pt-12">
+    <div className={incrustado ? 'pt-2' : 'pt-6 sm:pt-12'}>
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">¿Qué quieres saber del reglamento?</h1>
       <p className="mt-2 text-stone-600">
         Pregunta sobre las reglas de tránsito en <span className="font-medium text-stone-800">{lugar}</span>.
@@ -198,11 +212,13 @@ function nombreUbicacion(cobertura: Cobertura, ubicacion: Ubicacion): string | n
 }
 
 function leerUbicacion(): Ubicacion | null {
+  // Incrustado con ?estado=…: arranca en ese estado si la persona no ha elegido otra ubicación.
+  const inicial = estadoInicial ? { estadoId: estadoInicial, municipioId: null } : null
   try {
     const guardada = localStorage.getItem(CLAVE_UBICACION)
-    return guardada ? (JSON.parse(guardada) as Ubicacion) : null
+    return guardada ? (JSON.parse(guardada) as Ubicacion) : inicial
   } catch {
-    return null
+    return inicial
   }
 }
 

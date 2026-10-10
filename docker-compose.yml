@@ -2,7 +2,9 @@ name: consulta-vial
 
 x-php: &php
   build:
-    context: ./docker/php
+    context: .
+    dockerfile: docker/php/Dockerfile
+    target: base
   image: consulta-vial/php:8.3
   working_dir: /var/www/html
   # Todo (php-fpm, worker y `docker compose exec app php artisan …`) corre como

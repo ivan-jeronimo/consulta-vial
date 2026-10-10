@@ -8,6 +8,7 @@ use App\Models\Municipio;
 use App\Models\ReglamentoArticulo;
 use App\Services\Consulta\BuscadorArticulos;
 use App\Services\Consulta\GeneradorRespuesta;
+use App\Services\Consulta\LimiteConsultas;
 use App\Services\Metricas\RegistroConsultas;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 
 class ConsultaController extends Controller
 {
-    public function __invoke(Request $request, BuscadorArticulos $buscador, GeneradorRespuesta $generador, RegistroConsultas $registro): JsonResponse
+    public function __invoke(Request $request, BuscadorArticulos $buscador, GeneradorRespuesta $generador, RegistroConsultas $registro, LimiteConsultas $limite): JsonResponse
     {
         $inicio = microtime(true);
 
@@ -28,7 +29,11 @@ class ConsultaController extends Controller
             'municipio_id' => ['nullable', 'integer', 'exists:municipios,id'],
             // Identificador aleatorio del navegador, solo para contar usuarios únicos.
             'visitante' => ['nullable', 'uuid'],
+            // Sitio que incrusta el chat (p. ej. "andantes"), para las métricas.
+            'origen' => ['nullable', 'string', 'max:40', 'alpha_dash'],
         ]);
+
+        $limite->registrar($datos['visitante'] ?? null, (string) $request->ip());
 
         [$estado, $municipio] = $this->resolverTerritorio($datos);
 
@@ -67,6 +72,7 @@ class ConsultaController extends Controller
         defer(fn () => $registro->registrar([
             'id' => $consultaId,
             'visitante' => $datos['visitante'] ?? null,
+            'origen' => $datos['origen'] ?? null,
             'pregunta' => $datos['pregunta'],
             'estado_id' => $estado?->id,
             'municipio_id' => $municipio?->id,

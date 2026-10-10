@@ -1,0 +1,86 @@
+# Producción (servidor). Uso: ./desplegar.sh (o ./dc ... para cualquier comando de compose)
+# Variables: backend/.env (Laravel) y .env junto a este archivo (DOMINIO).
+# No publica puertos: el Caddy de la puerta del servidor (proyecto Andantes) llega
+# a "consulta-vial-web" por la red compartida "proxy" y pone el HTTPS.
+name: consulta-vial
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: docker/php/Dockerfile
+    target: app
+  image: consulta-vial/app:produccion
+  env_file: backend/.env
+  volumes:
+    # Logs, caché, sesiones y PDFs de reglamentos sobreviven a cada despliegue.
+    - storage:/var/www/html/storage
+  depends_on:
+    postgres:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  app:
+    <<: *app
+    # La caché de configuración se arma al arrancar: depende del .env del servidor.
+    command: sh -c "php artisan optimize && exec php-fpm"
+
+  # Ingesta de reglamentos (PDF → artículos → embeddings) al subirlos en el panel.
+  worker:
+    <<: *app
+    command: sh -c "php artisan optimize && exec php artisan queue:work redis --queue=ingesta,default --memory=768 --timeout=3600 --tries=1 --sleep=3 --max-time=3600"
+    stop_grace_period: 60s
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+      target: web
+    image: consulta-vial/web:produccion
+    networks:
+      default:
+      proxy:
+        aliases: [consulta-vial-web]
+    depends_on:
+      - app
+    restart: unless-stopped
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    # Las ${DB_*} salen de backend/.env: desplegar.sh pasa ambos .env a docker compose.
+    environment:
+      POSTGRES_DB: ${DB_DATABASE:-consulta_vial}
+      POSTGRES_USER: ${DB_USERNAME:-consulta_vial}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en backend/.env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/produccion.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+networks:
+  proxy:
+    external: true
+
+volumes:
+  storage:
+  pgdata:
+  redisdata:

@@ -1,0 +1,41 @@
+# Caddy interno de Consulta Vial (solo HTTP, sin puertos publicados). El HTTPS
+# y el dominio los pone el Caddy de la puerta del servidor (sitio.caddy).
+{
+	auto_https off
+	admin off
+}
+
+:80 {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		-Server
+	}
+
+	# Laravel: API del chat y panel.
+	@laravel path /api/* /admin /admin/* /livewire* /filament/* /css/filament/* /js/filament/* /fonts/filament/* /up
+	handle @laravel {
+		root * /var/www/html/public
+		php_fastcgi app:9000 {
+			# Igual que max_execution_time: dar tiempo al LLM y a su respaldo.
+			read_timeout 150s
+		}
+		file_server
+	}
+
+	# El chat (React). Otros sitios lo incrustan con ?incrustado=1 (ver frontend/src/incrustado.ts).
+	handle {
+		root * /srv/chat
+		@assets path /assets/*
+		header @assets Cache-Control "public, max-age=31536000, immutable"
+		try_files {path} /index.html
+		file_server
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}
