@@ -1,5 +1,6 @@
 # Producción (servidor). Uso: ./desplegar.sh (o ./dc ... para cualquier comando de compose)
-# Variables: backend/.env (Laravel) y .env junto a este archivo (DOMINIO).
+# Variables: backend/.env (Laravel) y .env junto a este archivo (DOMINIO y SOLO_INCRUSTADO:
+# mientras no se publique, URL a la que se manda a quien abra el chat directo).
 # No publica puertos: el Caddy de la puerta del servidor (proyecto Andantes) llega
 # a "consulta-vial-web" por la red compartida "proxy" y pone el HTTPS.
 name: consulta-vial
@@ -38,6 +39,8 @@ services:
       context: .
       dockerfile: docker/php/Dockerfile
       target: web
+      args:
+        VITE_SOLO_INCRUSTADO: ${SOLO_INCRUSTADO:-}
     image: consulta-vial/web:produccion
     networks:
       default:

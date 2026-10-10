@@ -3,7 +3,7 @@ import { consultar, ErrorConsulta, obtenerCobertura, type Cobertura, type Ubicac
 import { CampoPregunta } from './components/CampoPregunta'
 import { VistaMensaje, type Mensaje } from './components/Mensaje'
 import { SelectorUbicacion } from './components/SelectorUbicacion'
-import { estadoInicial, incrustado, marca } from './incrustado'
+import { EN_PRUEBA, estadoInicial, incrustado, marca } from './incrustado'
 
 const CLAVE_UBICACION = 'consulta-vial:ubicacion'
 
@@ -129,17 +129,10 @@ export default function App() {
             <div className="sticky bottom-0 -mx-4 bg-gradient-to-t from-stone-50 from-70% to-transparent px-4 pt-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <CampoPregunta deshabilitado={enCurso} onEnviar={preguntar} />
               <p className="mt-2 text-center text-xs text-stone-500">
-                Información orientativa basada en los reglamentos publicados. No sustituye asesoría legal.
+                {EN_PRUEBA && <span className="font-semibold text-amber-700">Versión de prueba: puede equivocarse. </span>}
+                Información orientativa basada en los reglamentos publicados; revisa los artículos citados. No sustituye asesoría legal.
                 Tus preguntas se guardan de forma anónima para mejorar el servicio.
               </p>
-              {incrustado && (
-                <p className="mt-1 text-center text-[11px] text-stone-400">
-                  Con tecnología de{' '}
-                  <a href={location.origin} target="_blank" rel="noopener" className="font-semibold text-stone-500 hover:text-stone-700">
-                    Consulta Vial
-                  </a>
-                </p>
-              )}
             </div>
           </>
         )}
@@ -154,11 +147,15 @@ function Encabezado({ ubicacion, onCambiar }: { ubicacion: string | null; onCamb
       <div className={`mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 ${incrustado ? 'h-12' : 'h-14'}`}>
         {incrustado ? (
           // Dentro de otro sitio: sin logo ni enlace (abriría Consulta Vial dentro del iframe).
-          <span className="truncate text-sm font-semibold tracking-tight">{marca}</span>
+          <span className="flex min-w-0 items-center gap-2">
+            <span className="truncate text-sm font-semibold tracking-tight">{marca}</span>
+            {EN_PRUEBA && <InsigniaPrueba />}
+          </span>
         ) : (
           <a href="/" className="flex items-center gap-2 font-semibold tracking-tight">
             <img src="/icono.svg" alt="" className="size-7" />
             Consulta Vial
+            {EN_PRUEBA && <InsigniaPrueba />}
           </a>
         )}
         {ubicacion && (
@@ -187,6 +184,12 @@ function Bienvenida({ lugar, onEjemplo }: { lugar: string; onEjemplo: (pregunta:
         Pregunta sobre las reglas de tránsito en <span className="font-medium text-stone-800">{lugar}</span>.
         Cada respuesta cita los artículos en los que se basa.
       </p>
+      {EN_PRUEBA && (
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <span className="font-semibold">Estamos probando este asistente.</span> Puede equivocarse; por ejemplo, al decidir qué
+          aplica primero entre el reglamento municipal, el estatal y la guía de examen. Revisa siempre los artículos que cita.
+        </p>
+      )}
       <div className="mt-8 grid gap-2 sm:grid-cols-2">
         {EJEMPLOS.map((ejemplo) => (
           <button
@@ -228,4 +231,12 @@ function guardarUbicacion(ubicacion: Ubicacion) {
   } catch {
     // Sin almacenamiento (modo privado): se volverá a pedir la ubicación.
   }
+}
+
+function InsigniaPrueba() {
+  return (
+    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+      En prueba
+    </span>
+  )
 }

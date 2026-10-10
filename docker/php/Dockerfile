@@ -31,6 +31,9 @@ WORKDIR /app
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 COPY frontend/ ./
+# Antes de publicar Consulta Vial: URL a la que se manda a quien abra el chat sin incrustar.
+ARG VITE_SOLO_INCRUSTADO=""
+ENV VITE_SOLO_INCRUSTADO=$VITE_SOLO_INCRUSTADO
 RUN npm run build
 
 

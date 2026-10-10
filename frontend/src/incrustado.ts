@@ -6,10 +6,17 @@
  * - color:   color principal en hex, sin #. Botones y acentos lo usan.
  * - origen:  identificador del sitio, para las métricas del panel.
  * - estado:  id del estado con el que arranca si la persona aún no elige ubicación.
- *
- * Abajo queda la línea "Con tecnología de Consulta Vial".
  */
 const parametros = new URLSearchParams(location.search)
+
+/** Mientras sea true, el chat avisa que es una versión de prueba y puede equivocarse. */
+export const EN_PRUEBA = true
+
+/**
+ * Antes de publicar Consulta Vial por su cuenta: con VITE_SOLO_INCRUSTADO (una
+ * URL), quien abra el chat directamente se va ahí; solo funciona incrustado.
+ */
+export const soloIncrustado: string = import.meta.env.VITE_SOLO_INCRUSTADO ?? ''
 
 export const incrustado = parametros.get('incrustado') === '1'
 
