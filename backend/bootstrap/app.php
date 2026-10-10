@@ -13,9 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // En producción la app solo es accesible detrás del proxy (Caddy): de él
-        // salen la IP real del visitante (límites diarios) y el https.
-        $middleware->trustProxies(at: '*');
+        // En producción la app está detrás de dos Caddy (la puerta del servidor y
+        // el interno), ambos en redes privadas de Docker. De ellos salen la IP
+        // real del visitante (límites diarios) y el https. Confiar solo en esas
+        // redes: si se confiara en cualquiera, alguien podría inventarse la IP.
+        $middleware->trustProxies(at: ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16', '127.0.0.1']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

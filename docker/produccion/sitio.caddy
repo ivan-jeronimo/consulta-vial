@@ -1,5 +1,5 @@
 # Lo importa el Caddy de la puerta del servidor (proyecto Andantes, ~/caddy-sitios).
-# desplegar.sh lo copia ahí cambiando {DOMINIO} por el de .env.
+# desplegar.sh lo copia ahí poniendo el dominio de .env en el marcador de abajo.
 {DOMINIO} {
 	encode zstd gzip
 	reverse_proxy consulta-vial-web:80

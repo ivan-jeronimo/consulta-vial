@@ -2,6 +2,11 @@
 # y el dominio los pone el Caddy de la puerta del servidor (sitio.caddy).
 {
 	auto_https off
+	# Confiar en el Caddy de la puerta (red interna de Docker): conserva el https
+	# y la IP real del visitante (X-Forwarded-*), de la que dependen los límites diarios.
+	servers {
+		trusted_proxies static private_ranges
+	}
 	admin off
 }
 
