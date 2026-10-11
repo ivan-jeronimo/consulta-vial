@@ -39,7 +39,7 @@ export function SelectorUbicacion({ cobertura, inicial, onElegir, onCancelar }: 
 
   return (
     <Tarjeta>
-      <h2 className="text-xl font-semibold tracking-tight">¿Dónde vas a circular?</h2>
+      <h2 className="text-xl font-semibold tracking-tight senal:font-titulos senal:text-3xl senal:font-extrabold senal:uppercase senal:leading-none">¿Dónde vas a circular?</h2>
       <p className="mt-1 text-sm text-stone-600">
         Las reglas cambian según el estado y el municipio. Elige el lugar para consultar su reglamento.
       </p>
@@ -86,7 +86,7 @@ export function SelectorUbicacion({ cobertura, inicial, onElegir, onCancelar }: 
           <button
             type="submit"
             disabled={!puedeContinuar}
-            className="flex-1 rounded-xl bg-marca-700 px-4 py-3 font-medium text-white shadow-sm transition hover:bg-marca-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marca-700 disabled:opacity-50"
+            className="flex-1 rounded-xl bg-marca-700 px-4 py-3 font-medium text-white shadow-sm transition hover:bg-marca-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-marca-700 disabled:opacity-50 senal:rounded-full senal:bg-senal-acento senal:font-bold senal:text-senal-oscuro senal:shadow-none senal:hover:bg-senal-acento/85"
           >
             Continuar
           </button>
@@ -110,7 +110,7 @@ function primeraOpcion(estado: { municipios: { id: number }[] } | null): string 
 }
 
 const estiloSelect =
-  'w-full appearance-none rounded-xl border border-stone-300 bg-white px-4 py-3 pr-10 text-base shadow-sm focus:border-marca-600 focus:outline-none focus:ring-2 focus:ring-marca-600/20'
+  'w-full appearance-none rounded-xl border border-stone-300 bg-white px-4 py-3 pr-10 text-base shadow-sm focus:border-marca-600 focus:outline-none focus:ring-2 focus:ring-marca-600/20 senal:border-2 senal:border-senal-oscuro/80 senal:font-semibold senal:shadow-none senal:focus:ring-4 senal:focus:ring-senal-acento/50'
 
 function Campo({ etiqueta, children }: { etiqueta: string; children: React.ReactNode }) {
   return (
@@ -133,7 +133,7 @@ function Campo({ etiqueta, children }: { etiqueta: string; children: React.React
 
 function Tarjeta({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8">
+    <div className="mx-auto w-full max-w-md rounded-2xl border border-stone-200 bg-white p-6 shadow-sm sm:p-8 senal:border-senal-borde senal:shadow-none">
       {children}
     </div>
   )

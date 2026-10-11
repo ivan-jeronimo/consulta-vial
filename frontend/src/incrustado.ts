@@ -8,6 +8,7 @@
  * - estado:  id del estado con el que arranca si la persona aún no elige ubicación.
  * - fondo:   color de fondo en hex, sin # (el del sitio que incrusta).
  * - fuente:  tipografía del sitio, de una lista cerrada (FUENTES); los títulos usan su versión condensada.
+ * - tema:    "senaletica": asfalto, amarillo de señal y títulos condensados (variante senal: de index.css).
  */
 const parametros = new URLSearchParams(location.search)
 
@@ -59,6 +60,10 @@ const FUENTES: Record<string, { css: string; texto: string; titulos: string }> =
 
 /** Fondo y tipografía del sitio que incrusta, para que el chat se vea como parte de él. */
 export function aplicarEstiloDelSitio() {
+  // Tema completo (index.css, variante senal:). Lista cerrada.
+  const tema = valor('tema', /^senaletica$/)
+  if (tema) document.documentElement.dataset.tema = tema
+
   const fondo = valor('fondo', /^[0-9a-f]{6}$/i)
   // El fondo de la página y el degradado sobre el campo de pregunta usan stone-50.
   if (fondo) document.documentElement.style.setProperty('--color-stone-50', `#${fondo}`)
@@ -72,9 +77,7 @@ export function aplicarEstiloDelSitio() {
   document.head.append(enlace)
 
   const estilo = document.createElement('style')
-  estilo.textContent = `
-    :root { --font-sans: ${fuente.texto}; }
-    h1 { font-family: ${fuente.titulos}; font-weight: 800; text-transform: uppercase; line-height: 0.95; letter-spacing: 0; }
-  `
+  // Tailwind lee las fuentes de estas variables (font-sans y font-titulos).
+  estilo.textContent = `:root { --font-sans: ${fuente.texto}; --font-titulos: ${fuente.titulos}; }`
   document.head.append(estilo)
 }

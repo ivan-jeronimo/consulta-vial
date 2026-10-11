@@ -152,12 +152,12 @@ export default function App() {
 
 function Encabezado({ ubicacion, onCambiar }: { ubicacion: string | null; onCambiar: () => void }) {
   return (
-    <header className="sticky top-0 z-10 border-b border-stone-200 bg-white/85 backdrop-blur">
+    <header className="sticky top-0 z-10 border-b border-stone-200 bg-white/85 backdrop-blur senal:border-senal-borde senal:bg-senal-fondo/90">
       <div className={`mx-auto flex max-w-3xl items-center justify-between gap-3 px-4 ${incrustado ? 'h-12' : 'h-14'}`}>
         {incrustado ? (
           // Dentro de otro sitio: sin logo ni enlace (abriría Consulta Vial dentro del iframe).
           <span className="flex min-w-0 items-center gap-2">
-            <span className="truncate text-sm font-semibold tracking-tight">{marca}</span>
+            <span className="truncate text-sm font-semibold tracking-tight senal:font-titulos senal:text-base senal:font-bold senal:uppercase senal:tracking-wider">{marca}</span>
             {EN_PRUEBA && <InsigniaPrueba />}
           </span>
         ) : (
@@ -171,10 +171,10 @@ function Encabezado({ ubicacion, onCambiar }: { ubicacion: string | null; onCamb
           <button
             type="button"
             onClick={onCambiar}
-            className="flex min-w-0 items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 shadow-sm transition hover:bg-stone-50"
+            className="flex min-w-0 items-center gap-1.5 rounded-full border border-stone-200 bg-white px-3 py-1.5 text-sm text-stone-700 shadow-sm transition hover:bg-stone-50 senal:border-senal-oscuro/20 senal:font-semibold senal:text-senal-oscuro senal:shadow-none senal:hover:border-senal-oscuro"
             title="Cambiar ubicación"
           >
-            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="size-4 shrink-0 text-marca-700">
+            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="size-4 shrink-0 text-marca-700 senal:text-senal-oscuro">
               <path fillRule="evenodd" d="m9.69 18.933.003.001C9.89 19.02 10 19 10 19s.11.02.308-.066l.002-.001.006-.003.018-.008a5.741 5.741 0 0 0 .281-.14c.186-.096.446-.24.757-.433.62-.384 1.445-.966 2.274-1.765C15.302 14.988 17 12.493 17 9A7 7 0 1 0 3 9c0 3.492 1.698 5.988 3.355 7.584a13.731 13.731 0 0 0 2.273 1.765 11.842 11.842 0 0 0 .976.544l.062.029.018.008.006.003ZM10 11.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z" clipRule="evenodd" />
             </svg>
             <span className="truncate">{ubicacion}</span>
@@ -191,25 +191,31 @@ function Bienvenida({ lugar, onEjemplo }: { lugar: string; onEjemplo: (pregunta:
 
   return (
     <div className={incrustado ? 'pt-2' : 'pt-6 sm:pt-12'}>
-      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">¿Qué quieres saber del reglamento?</h1>
+      <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl senal:font-titulos senal:text-[2.1rem] senal:font-extrabold senal:uppercase senal:leading-[0.95] senal:tracking-normal">
+        ¿Qué quieres saber del reglamento?
+      </h1>
       <p className="mt-2 text-stone-600">
         Pregunta sobre las reglas de tránsito en <span className="font-medium text-stone-800">{lugar}</span>.
         Cada respuesta cita los artículos en los que se basa.
       </p>
       {EN_PRUEBA && (
-        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 senal:border-l-4 senal:border-senal-acento senal:bg-white senal:text-stone-700">
           <span className="font-semibold">Estamos probando este asistente.</span> Puede equivocarse; por ejemplo, al decidir qué
           aplica primero entre el reglamento municipal, el estatal y la guía de examen. Revisa siempre los artículos que cita.
         </p>
       )}
       <div className="mt-8 grid gap-2 sm:grid-cols-2">
-        {ejemplos.map((ejemplo) => (
+        {ejemplos.map((ejemplo, i) => (
           <button
             key={ejemplo}
             type="button"
             onClick={() => onEjemplo(ejemplo)}
-            className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-left text-sm text-stone-700 shadow-sm transition hover:border-marca-600/40 hover:bg-marca-50"
+            className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-left text-sm text-stone-700 shadow-sm transition hover:border-marca-600/40 hover:bg-marca-50 senal:flex senal:items-center senal:gap-3 senal:border-senal-borde senal:font-medium senal:text-senal-oscuro senal:shadow-none senal:hover:border-senal-oscuro senal:hover:bg-white"
           >
+            {/* Con el tema señalética, cada sugerencia lleva su número como marcador de kilómetro. */}
+            <span aria-hidden="true" className="hidden shrink-0 rounded-md bg-senal-oscuro px-1.5 py-0.5 font-titulos text-sm font-extrabold text-senal-acento senal:inline">
+              {String(i + 1).padStart(2, '0')}
+            </span>
             {ejemplo}
           </button>
         ))}
@@ -247,7 +253,7 @@ function guardarUbicacion(ubicacion: Ubicacion) {
 
 function InsigniaPrueba() {
   return (
-    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+    <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800 senal:bg-senal-oscuro senal:text-senal-acento">
       En prueba
     </span>
   )

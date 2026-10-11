@@ -2,9 +2,10 @@ import { useState } from 'react'
 import type { Fuente, Nivel, TipoDocumento } from '../api'
 
 const NIVEL: Record<Nivel, { etiqueta: string; clase: string }> = {
-  municipal: { etiqueta: 'Municipal', clase: 'bg-marca-50 text-marca-800 ring-marca-600/20' },
-  estatal: { etiqueta: 'Estatal', clase: 'bg-sky-50 text-sky-800 ring-sky-600/20' },
-  federal: { etiqueta: 'Federal', clase: 'bg-violet-50 text-violet-800 ring-violet-600/20' },
+  // Con el tema señalética, placas: municipal amarilla, estatal negra, federal blanca con borde.
+  municipal: { etiqueta: 'Municipal', clase: 'bg-marca-50 text-marca-800 ring-marca-600/20 senal:bg-senal-acento senal:text-senal-oscuro senal:ring-senal-oscuro/15' },
+  estatal: { etiqueta: 'Estatal', clase: 'bg-sky-50 text-sky-800 ring-sky-600/20 senal:bg-senal-oscuro senal:text-white senal:ring-senal-oscuro' },
+  federal: { etiqueta: 'Federal', clase: 'bg-violet-50 text-violet-800 ring-violet-600/20 senal:bg-white senal:text-senal-oscuro senal:ring-senal-oscuro' },
 }
 
 /** Etiqueta extra solo para lo que no es norma (los reglamentos y leyes no la necesitan). */
@@ -71,7 +72,7 @@ function TarjetaArticulo({ grupo, abiertaInicial }: { grupo: GrupoArticulo; abie
   const apartados = grupo.apartados.map(nombreApartado).filter(Boolean)
 
   return (
-    <div className="overflow-hidden rounded-xl border border-stone-200 bg-white">
+    <div className="overflow-hidden rounded-xl border border-stone-200 bg-white senal:rounded-2xl senal:border-senal-borde">
       <button
         type="button"
         onClick={() => setAbierta(!abierta)}
@@ -80,12 +81,12 @@ function TarjetaArticulo({ grupo, abiertaInicial }: { grupo: GrupoArticulo; abie
       >
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2">
-            <span className="font-medium text-stone-900">
+            <span className="font-medium text-stone-900 senal:font-titulos senal:text-lg senal:font-extrabold senal:uppercase senal:leading-none senal:text-senal-oscuro">
               {grupo.articulo
                 ? `Artículo ${grupo.articulo}`
                 : capitalizar(grupo.seccion ?? grupo.capitulo ?? 'Fragmento')}
             </span>
-            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset ${nivel.clase}`}>
+            <span className={`rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset senal:rounded-md senal:font-bold senal:uppercase senal:tracking-wide ${nivel.clase}`}>
               {nivel.etiqueta}
             </span>
             {TIPO[grupo.tipo] && (
@@ -115,7 +116,7 @@ function TarjetaArticulo({ grupo, abiertaInicial }: { grupo: GrupoArticulo; abie
       </button>
 
       {abierta && (
-        <div className="space-y-3 border-t border-stone-100 bg-stone-50/60 px-4 py-3">
+        <div className="space-y-3 border-t border-stone-100 bg-stone-50/60 px-4 py-3 senal:border-senal-borde senal:bg-senal-fondo/60">
           {/* En un manual el título de la tarjeta ya es la sección; aquí va el tema que la contiene. */}
           {grupo.capitulo && (grupo.articulo || grupo.seccion) && (
             <p className="text-xs font-medium uppercase tracking-wide text-stone-500">{capitalizar(grupo.capitulo)}</p>
@@ -127,7 +128,7 @@ function TarjetaArticulo({ grupo, abiertaInicial }: { grupo: GrupoArticulo; abie
           {ordenar(grupo.apartados).map((a) => (
             <p
               key={a.orden}
-              className={`whitespace-pre-line text-sm leading-relaxed text-stone-800 ${grupo.contexto ? 'border-l-2 border-marca-600/40 pl-3' : ''}`}
+              className={`whitespace-pre-line text-sm leading-relaxed text-stone-800 ${grupo.contexto ? 'border-l-2 border-marca-600/40 pl-3 senal:border-l-4 senal:border-senal-acento' : ''}`}
             >
               {a.texto}
             </p>
