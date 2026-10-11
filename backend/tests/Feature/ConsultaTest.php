@@ -260,7 +260,7 @@ class ConsultaTest extends TestCase
 
     public function test_con_municipio_tambien_consulta_el_estatal_aunque_el_municipal_tenga_mas_coincidencias(): void
     {
-        config(['rag.llm.anthropic.key' => null, 'rag.busqueda.resultados' => 3, 'rag.busqueda.minimo_por_nivel' => 1]);
+        config(['rag.llm.anthropic.key' => null, 'rag.busqueda.resultados' => 3, 'rag.busqueda.minimo_por_nivel' => 1, 'rag.busqueda.vecinos' => 0]);
         $oaxaca = $this->municipio->estado;
         $registro = app(RegistroReglamentos::class);
         $registro->registrar(
@@ -291,5 +291,27 @@ class ConsultaTest extends TestCase
         // Solo el estado: solo el ámbito estatal.
         $this->postJson('/api/consulta', ['estado_id' => $oaxaca->id, 'pregunta' => $pregunta])
             ->assertJsonPath('ambitos', [['nivel' => 'estatal', 'nombre' => 'Oaxaca']]);
+    }
+
+    public function test_aprendiendo_a_manejar_encuentra_las_reglas_de_la_ensenanza(): void
+    {
+        config(['rag.llm.anthropic.key' => null]);
+        $registro = app(RegistroReglamentos::class);
+        // Como en el reglamento estatal: el artículo no dice "aprender" ni "autoescuela".
+        $registro->registrar(
+            ['titulo' => 'Reglamento de Autoescuelas', 'nivel' => 'estatal', 'estado_id' => $this->municipio->estado_id, 'anio' => 2024],
+            $registro->guardarTexto(implode("\n", [
+                'ARTÍCULO 251. Los prestadores del servicio en la modalidad de autoescuelas deberán contar con permiso.',
+                'ARTÍCULO 256. Durante la enseñanza los conductores deberán poner en funcionamiento las luces intermitentes de advertencia.',
+                'ARTÍCULO 257. Los vehículos deberán colocar en el cofre la calcomanía con la leyenda "Escuela de Manejo".',
+            ])),
+        );
+
+        $articulos = collect($this->postJson('/api/consulta', [
+            'estado_id' => $this->municipio->estado_id,
+            'pregunta' => '¿Qué debe hacer alguien que está aprendiendo a conducir?',
+        ])->assertOk()->json('fuentes'))->pluck('articulo');
+
+        $this->assertContains('256', $articulos);
     }
 }

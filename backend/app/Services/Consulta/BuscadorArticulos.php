@@ -3,6 +3,7 @@
 namespace App\Services\Consulta;
 
 use App\Enums\NivelJurisdiccion;
+use App\Enums\TipoDocumento;
 use App\Models\ReglamentoArticulo;
 use App\Services\Embeddings\EmbeddingService;
 use Illuminate\Support\Collection;
@@ -32,12 +33,14 @@ class BuscadorArticulos
     {
         $limite ??= config('rag.busqueda.resultados');
         $candidatos = config('rag.busqueda.candidatos');
+        // Con las palabras del reglamento ("aprendiendo a manejar" → "enseñanza, escuela de manejo").
+        $consulta = Sinonimos::expandir($pregunta);
 
-        $rankings = [$this->porTexto($pregunta, $estadoId, $municipioId, $candidatos)];
+        $rankings = [$this->porTexto($consulta, $estadoId, $municipioId, $candidatos)];
 
         if ($this->embeddings->esSemantico()) {
             try {
-                $rankings[] = $this->porVector($pregunta, $estadoId, $municipioId, $candidatos);
+                $rankings[] = $this->porVector($consulta, $estadoId, $municipioId, $candidatos);
             } catch (\Throwable $e) {
                 // Sin embedding (cuota agotada, red, etc.) la búsqueda léxica sigue sirviendo.
                 Log::warning('Búsqueda vectorial no disponible; se usa solo texto completo', ['error' => mb_substr($e->getMessage(), 0, 200)]);
@@ -52,7 +55,14 @@ class BuscadorArticulos
         }
 
         arsort($puntajes);
-        $puntajes = $this->repartir($puntajes, $limite, $municipioId);
+
+        if ($puntajes === []) {
+            return new Collection;
+        }
+
+        $datos = $this->datos(array_keys($puntajes));
+        $puntajes = $this->repartir($puntajes, $datos, $limite, $municipioId);
+        $puntajes = $this->conVecinos($puntajes, $datos);
 
         return ReglamentoArticulo::query()
             ->with('documento.estado', 'documento.municipio')
@@ -63,34 +73,114 @@ class BuscadorArticulos
     }
 
     /**
-     * Con un municipio elegido se consultan dos reglamentos: el estatal (aplica en
-     * todo el estado) y el municipal. Cada uno se queda con sus mejores artículos
-     * (hasta `minimo_por_nivel`), para que el más extenso no deje fuera al otro;
-     * el resto de los lugares se llena por relevancia.
+     * Nivel, documento, posición y si es material de estudio (manual o guía) de cada candidato.
+     *
+     * @param  list<int>  $ids
+     * @return Collection<int, object{nivel: string, documento_id: int, orden: int, estudio: bool}>
+     */
+    private function datos(array $ids): Collection
+    {
+        return ReglamentoArticulo::query()
+            ->join('documentos_reglamentos as d', 'd.id', '=', 'reglamentos_articulos.documento_id')
+            ->whereIn('reglamentos_articulos.id', $ids)
+            ->toBase()
+            ->get(['reglamentos_articulos.id', 'reglamentos_articulos.nivel', 'reglamentos_articulos.documento_id', 'reglamentos_articulos.orden', 'd.tipo'])
+            ->map(function (object $f) {
+                $f->estudio = $f->tipo === TipoDocumento::Manual->value;
+
+                return $f;
+            })
+            ->keyBy('id');
+    }
+
+    /**
+     * Qué candidatos llegan al modelo:
+     *  - Con un municipio elegido se consultan dos reglamentos: el estatal (aplica en
+     *    todo el estado) y el municipal. Cada uno se queda con sus mejores artículos
+     *    (hasta `minimo_por_nivel`), para que el más extenso no deje fuera al otro.
+     *  - La guía de examen ocupa a lo más `maximo_material_estudio` lugares: sus
+     *    cientos de frases cortas ("al conducir…") acaparaban la búsqueda y la
+     *    respuesta se quedaba sin un solo artículo del reglamento.
+     * El resto de los lugares se llena por relevancia.
      *
      * @param  array<int, float>  $puntajes  ordenados de mayor a menor
      * @return array<int, float>
      */
-    private function repartir(array $puntajes, int $limite, ?int $municipioId): array
+    private function repartir(array $puntajes, Collection $datos, int $limite, ?int $municipioId): array
     {
-        if (! $municipioId || count($puntajes) <= $limite) {
-            return array_slice($puntajes, 0, $limite, preserve_keys: true);
-        }
-
-        $niveles = ReglamentoArticulo::query()->whereKey(array_keys($puntajes))->toBase()->pluck('nivel', 'id');
-        $minimo = (int) config('rag.busqueda.minimo_por_nivel');
+        $esNorma = fn (int $id) => ! $datos[$id]->estudio;
         $elegidos = [];
 
-        foreach ([NivelJurisdiccion::Estatal, NivelJurisdiccion::Municipal] as $nivel) {
-            $delNivel = array_filter($puntajes, fn (int $id) => $niveles[$id] === $nivel->value, ARRAY_FILTER_USE_KEY);
-            $elegidos += array_slice($delNivel, 0, $minimo, preserve_keys: true);
+        if ($municipioId) {
+            $minimo = (int) config('rag.busqueda.minimo_por_nivel');
+
+            foreach ([NivelJurisdiccion::Estatal, NivelJurisdiccion::Municipal] as $nivel) {
+                $delNivel = array_filter($puntajes, fn (int $id) => $esNorma($id) && $datos[$id]->nivel === $nivel->value, ARRAY_FILTER_USE_KEY);
+                $elegidos += array_slice($delNivel, 0, $minimo, preserve_keys: true);
+            }
         }
+
+        $maximoEstudio = (int) config('rag.busqueda.maximo_material_estudio');
+        $estudio = 0;
 
         foreach ($puntajes as $id => $puntaje) {
             if (count($elegidos) >= $limite) {
                 break;
             }
-            $elegidos[$id] ??= $puntaje;
+            if (isset($elegidos[$id]) || (! $esNorma($id) && $estudio >= $maximoEstudio)) {
+                continue;
+            }
+            $elegidos[$id] = $puntaje;
+            $estudio += $esNorma($id) ? 0 : 1;
+        }
+
+        arsort($elegidos);
+
+        return $elegidos;
+    }
+
+    /**
+     * Bloques temáticos: cuando salen artículos seguidos de un mismo reglamento
+     * (p. ej. 257 y 258, de las autoescuelas), los de junto suelen tratar lo mismo
+     * aunque no compartan palabras con la pregunta (el 256: "durante la enseñanza
+     * los conductores…"). Se agregan el anterior y el siguiente de cada bloque,
+     * hasta `vecinos` en total, con un puntaje un poco menor.
+     *
+     * @param  array<int, float>  $elegidos
+     * @return array<int, float>
+     */
+    private function conVecinos(array $elegidos, Collection $datos): array
+    {
+        $maximo = (int) config('rag.busqueda.vecinos');
+        $normas = collect(array_keys($elegidos))
+            ->map(fn (int $id) => $datos[$id])
+            ->reject(fn (object $f) => $f->estudio);
+        $agregados = 0;
+
+        foreach ($normas->groupBy('documento_id') as $documentoId => $delDocumento) {
+            $ordenados = $delDocumento->sortBy('orden')->values();
+
+            for ($i = 1; $i < $ordenados->count() && $agregados < $maximo; $i++) {
+                [$a, $b] = [$ordenados[$i - 1], $ordenados[$i]];
+
+                if ($b->orden - $a->orden > 2) {
+                    continue;
+                }
+
+                $vecinos = ReglamentoArticulo::query()
+                    ->where('documento_id', $documentoId)
+                    ->whereBetween('orden', [$a->orden - 1, $b->orden + 1])
+                    ->whereKeyNot(array_keys($elegidos))
+                    ->orderBy('orden')
+                    ->limit($maximo - $agregados)
+                    ->pluck('id');
+
+                $puntaje = min($elegidos[$a->id], $elegidos[$b->id]) * 0.9;
+                foreach ($vecinos as $id) {
+                    $elegidos[$id] = $puntaje;
+                    $agregados++;
+                }
+            }
         }
 
         arsort($elegidos);

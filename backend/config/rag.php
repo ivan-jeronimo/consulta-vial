@@ -23,12 +23,17 @@ return [
 
     'busqueda' => [
         // Fragmentos que se entregan al LLM como contexto.
-        'resultados' => 8,
+        'resultados' => 12,
         // Candidatos que aporta cada método (vectorial y texto) antes de fusionar.
         'candidatos' => 40,
         // Con municipio elegido, lugares asegurados para el reglamento estatal y
         // para el municipal (el resto se reparte por relevancia).
         'minimo_por_nivel' => 3,
+        // La guía de examen (material de estudio) ocupa a lo más estos lugares: sus
+        // frases cortas acaparaban la búsqueda y dejaban fuera al reglamento.
+        'maximo_material_estudio' => 3,
+        // Artículos vecinos de un bloque temático que se agregan al contexto (ver BuscadorArticulos::conVecinos).
+        'vecinos' => 3,
     ],
 
     'metricas' => [
