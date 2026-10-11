@@ -12,12 +12,19 @@ const CLAVE_UBICACION = 'consulta-vial:ubicacion'
 let siguienteId = 0
 const nuevoId = () => String(++siguienteId)
 
+// Preguntas que sorprenden (la respuesta no es obvia) y que los reglamentos cargados
+// sí responden. Se muestran 4 al azar en cada visita.
 const EJEMPLOS = [
-  '¿Puedo dar vuelta a la derecha con el semáforo en rojo?',
-  '¿Cuál es la velocidad máxima en zonas escolares?',
-  '¿Es obligatorio el casco para motociclistas?',
-  '¿Qué pasa si me estaciono en lugar prohibido?',
+  '¿Un niño de 12 años puede ir adelante si lleva el cinturón puesto?',
+  '¿Puedo llevar a mi perro en el asiento del copiloto?',
+  '¿Las motos pueden pasar entre los carriles cuando hay tráfico?',
+  '¿Me pueden multar por tocar el claxon?',
+  '¿Puedo andar en bicicleta con audífonos?',
+  '¿A cuántos metros de la salida de un hospital no me puedo estacionar?',
+  '¿Es obligatorio usar chaleco reflejante en moto de noche?',
+  '¿Cuándo puede una moto subirse a la banqueta?',
 ]
+const MOSTRADOS = 4
 
 export default function App() {
   const [cobertura, setCobertura] = useState<Cobertura | null>(null)
@@ -177,6 +184,9 @@ function Encabezado({ ubicacion, onCambiar }: { ubicacion: string | null; onCamb
 }
 
 function Bienvenida({ lugar, onEjemplo }: { lugar: string; onEjemplo: (pregunta: string) => void }) {
+  // Al azar una vez por visita (no cambian mientras la persona lee).
+  const [ejemplos] = useState(() => [...EJEMPLOS].sort(() => Math.random() - 0.5).slice(0, MOSTRADOS))
+
   return (
     <div className={incrustado ? 'pt-2' : 'pt-6 sm:pt-12'}>
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">¿Qué quieres saber del reglamento?</h1>
@@ -191,7 +201,7 @@ function Bienvenida({ lugar, onEjemplo }: { lugar: string; onEjemplo: (pregunta:
         </p>
       )}
       <div className="mt-8 grid gap-2 sm:grid-cols-2">
-        {EJEMPLOS.map((ejemplo) => (
+        {ejemplos.map((ejemplo) => (
           <button
             key={ejemplo}
             type="button"
