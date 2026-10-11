@@ -26,6 +26,9 @@ return [
         'resultados' => 8,
         // Candidatos que aporta cada método (vectorial y texto) antes de fusionar.
         'candidatos' => 40,
+        // Con municipio elegido, lugares asegurados para el reglamento estatal y
+        // para el municipal (el resto se reparte por relevancia).
+        'minimo_por_nivel' => 3,
     ],
 
     'metricas' => [

@@ -257,4 +257,39 @@ class ConsultaTest extends TestCase
         $this->travel(1)->days();
         $this->postJson('/api/consulta', $pregunta($ana))->assertOk();
     }
+
+    public function test_con_municipio_tambien_consulta_el_estatal_aunque_el_municipal_tenga_mas_coincidencias(): void
+    {
+        config(['rag.llm.anthropic.key' => null, 'rag.busqueda.resultados' => 3, 'rag.busqueda.minimo_por_nivel' => 1]);
+        $oaxaca = $this->municipio->estado;
+        $registro = app(RegistroReglamentos::class);
+        $registro->registrar(
+            ['titulo' => 'Reglamento de Motos', 'nivel' => 'municipal', 'estado_id' => $oaxaca->id, 'municipio_id' => $this->municipio->id, 'anio' => 2026],
+            $registro->guardarTexto(implode("\n", [
+                'ARTÍCULO 200. Es obligatorio usar casco en motocicleta para la persona conductora.',
+                'ARTÍCULO 201. Es obligatorio usar casco en motocicleta para la persona acompañante.',
+                'ARTÍCULO 202. Es obligatorio usar casco certificado en motocicleta en todo momento.',
+                'ARTÍCULO 203. Es obligatorio usar casco abrochado al circular en motocicleta.',
+            ])),
+        );
+        $registro->registrar(
+            ['titulo' => 'Ley Estatal de Motos', 'nivel' => 'estatal', 'estado_id' => $oaxaca->id, 'anio' => 2024],
+            $registro->guardarTexto('ARTÍCULO 300. Quien maneje una motocicleta llevará casco.'),
+        );
+        $pregunta = '¿Es obligatorio usar casco en motocicleta?';
+
+        $respuesta = $this->postJson('/api/consulta', ['municipio_id' => $this->municipio->id, 'pregunta' => $pregunta])->assertOk();
+
+        $articulos = collect($respuesta->json('fuentes'))->pluck('articulo');
+        $this->assertCount(3, $articulos);
+        $this->assertContains('300', $articulos, 'El estatal aplica también en el municipio.');
+        $respuesta->assertJsonPath('ambitos', [
+            ['nivel' => 'municipal', 'nombre' => 'Oaxaca de Juárez'],
+            ['nivel' => 'estatal', 'nombre' => 'Oaxaca'],
+        ]);
+
+        // Solo el estado: solo el ámbito estatal.
+        $this->postJson('/api/consulta', ['estado_id' => $oaxaca->id, 'pregunta' => $pregunta])
+            ->assertJsonPath('ambitos', [['nivel' => 'estatal', 'nombre' => 'Oaxaca']]);
+    }
 }

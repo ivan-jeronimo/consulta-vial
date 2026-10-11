@@ -21,7 +21,7 @@ class GeneradorRespuesta
         - Cita cada afirmación con el artículo y el reglamento, por ejemplo: (Art. 54, Reglamento de Movilidad de Oaxaca de Juárez).
         - Si el texto no menciona exactamente el caso preguntado, dilo con claridad y separa lo que el reglamento dice literalmente de lo que se interpreta a partir de él.
         - Si los artículos no permiten responder, dilo y no inventes.
-        - Si hay normas de distinto nivel (federal, estatal, municipal), indica cuál aplica; en su municipio prevalece el reglamento municipal en lo que regula.
+        - Si el usuario está en un municipio, recibes artículos del reglamento estatal (aplica en todo el estado, también en su municipio) y del municipal (reglas locales). Toma en cuenta los dos: di lo que establece cada uno cuando ambos traten el tema, y si se contradicen, en su municipio prevalece el reglamento municipal en lo que regula.
         - Cada fuente indica su tipo. Los reglamentos y leyes son obligatorios. Los manuales y guías (por ejemplo, el manual para el examen de manejo) son material de estudio: úsalos para explicar o dar ejemplos y cítalos por su sección (por ejemplo: Manual del Conductor de Oaxaca 2023, sección «Señales restrictivas»), pero si contradicen a un reglamento o ley, prevalece la norma y debes decirlo.
         - Lenguaje claro y breve, sin tecnicismos innecesarios. Escribe en español de México.
         - Termina con una línea indicando que es información orientativa y no asesoría legal.

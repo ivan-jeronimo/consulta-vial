@@ -39,11 +39,19 @@ export interface Fuente {
   texto: string
 }
 
+export interface Ambito {
+  nivel: Nivel
+  /** El lugar: municipio, estado o "México". */
+  nombre: string
+}
+
 export interface RespuestaConsulta {
   /** Para valorar la respuesta (👍/👎). */
   consulta_id: string
   pregunta: string
   ubicacion: string
+  /** Reglamentos que se consultaron (con municipio: el municipal y también el estatal). */
+  ambitos: Ambito[]
   respuesta: string | null
   aviso: string | null
   modelo: string | null

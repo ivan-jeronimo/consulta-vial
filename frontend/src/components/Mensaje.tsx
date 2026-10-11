@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Markdown from 'react-markdown'
 import { valorar, type RespuestaConsulta } from '../api'
-import { Fuentes } from './Fuentes'
+import { Ambitos, Fuentes } from './Fuentes'
 
 export type Mensaje =
   | { id: string; rol: 'usuario'; texto: string }
@@ -70,9 +70,12 @@ function Resultado({
 
   // Sin respuesta redactada (LLM no disponible), los artículos SON la respuesta:
   // se muestran siempre, con el más relevante abierto.
+  const consultado = <Ambitos ambitos={resultado.ambitos ?? []} />
+
   if (!resultado.respuesta) {
     return (
       <div className="space-y-4">
+        {consultado}
         <p className="leading-relaxed text-stone-800">
           {sinFuentes
             ? `No encontré artículos del reglamento de ${resultado.ubicacion} relacionados con tu pregunta. Prueba a formularla con otras palabras.`
@@ -88,6 +91,7 @@ function Resultado({
 
   return (
     <div className="space-y-4">
+      {consultado}
       <div className="respuesta leading-relaxed text-stone-800 senal:text-[15.5px] senal:text-senal-oscuro">
         <Markdown>{resultado.respuesta}</Markdown>
       </div>

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { consultar, ErrorConsulta, obtenerCobertura, type Cobertura, type Ubicacion } from './api'
+import { consultar, ErrorConsulta, obtenerCobertura, type Ambito, type Cobertura, type Ubicacion } from './api'
 import { CampoPregunta } from './components/CampoPregunta'
 import { VistaMensaje, type Mensaje } from './components/Mensaje'
+import { Ambitos } from './components/Fuentes'
 import { SelectorUbicacion } from './components/SelectorUbicacion'
 import { EN_PRUEBA, estadoInicial, incrustado, marca } from './incrustado'
 
@@ -126,7 +127,12 @@ export default function App() {
           <>
             <div className="flex-1 space-y-6 py-6">
               {mensajes.length === 0 ? (
-                <Bienvenida lugar={nombreUbicacion(cobertura, ubicacionValida)!} onEjemplo={preguntar} />
+                <Bienvenida
+                  lugar={nombreUbicacion(cobertura, ubicacionValida)!}
+                  ambitos={ambitosDe(cobertura, ubicacionValida)}
+                  onCambiar={() => setEligiendo(true)}
+                  onEjemplo={preguntar}
+                />
               ) : (
                 mensajes.map((m) => (
                   <VistaMensaje key={m.id} mensaje={m} onReintentar={reintentar} onPreguntarEnMunicipio={preguntarEnMunicipio} />
@@ -185,7 +191,17 @@ function Encabezado({ ubicacion, onCambiar }: { ubicacion: string | null; onCamb
   )
 }
 
-function Bienvenida({ lugar, onEjemplo }: { lugar: string; onEjemplo: (pregunta: string) => void }) {
+function Bienvenida({
+  lugar,
+  ambitos,
+  onCambiar,
+  onEjemplo,
+}: {
+  lugar: string
+  ambitos: Ambito[]
+  onCambiar: () => void
+  onEjemplo: (pregunta: string) => void
+}) {
   // Al azar una vez por visita (no cambian mientras la persona lee).
   const [ejemplos] = useState(() => [...EJEMPLOS].sort(() => Math.random() - 0.5).slice(0, MOSTRADOS))
 
@@ -198,6 +214,12 @@ function Bienvenida({ lugar, onEjemplo }: { lugar: string; onEjemplo: (pregunta:
         Pregunta sobre las reglas de tránsito en <span className="font-medium text-stone-800">{lugar}</span>.
         Cada respuesta cita los artículos en los que se basa.
       </p>
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
+        <Ambitos ambitos={ambitos} etiqueta="Se consulta" />
+        <button type="button" onClick={onCambiar} className="text-xs font-medium text-marca-700 underline underline-offset-2 senal:font-bold senal:text-senal-oscuro senal:decoration-senal-acento senal:decoration-2">
+          Cambiar
+        </button>
+      </div>
       {EN_PRUEBA && (
         <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 senal:border-l-4 senal:border-senal-acento senal:bg-white senal:text-stone-700">
           <span className="font-semibold">Estamos probando este asistente.</span> Puede equivocarse; por ejemplo, al decidir qué
@@ -222,6 +244,18 @@ function Bienvenida({ lugar, onEjemplo }: { lugar: string; onEjemplo: (pregunta:
       </div>
     </div>
   )
+}
+
+/** Reglamentos que se consultan en la ubicación elegida: con municipio, también el estatal. */
+function ambitosDe(cobertura: Cobertura, ubicacion: Ubicacion): Ambito[] {
+  const estado = cobertura.estados.find((e) => e.id === ubicacion.estadoId)
+  const municipio = estado?.municipios.find((m) => m.id === ubicacion.municipioId)
+
+  return [
+    municipio && { nivel: 'municipal' as const, nombre: municipio.nombre },
+    estado?.tiene_reglamento_estatal && { nivel: 'estatal' as const, nombre: estado.nombre },
+    cobertura.hay_normativa_federal && { nivel: 'federal' as const, nombre: 'México' },
+  ].filter((a): a is Ambito => !!a)
 }
 
 function nombreUbicacion(cobertura: Cobertura, ubicacion: Ubicacion): string | null {

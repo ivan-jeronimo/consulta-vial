@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { Fuente, Nivel, TipoDocumento } from '../api'
 
-const NIVEL: Record<Nivel, { etiqueta: string; clase: string }> = {
+export const NIVEL: Record<Nivel, { etiqueta: string; clase: string }> = {
   // Con el tema señalética, placas: municipal amarilla, estatal negra, federal blanca con borde.
   municipal: { etiqueta: 'Municipal', clase: 'bg-marca-50 text-marca-800 ring-marca-600/20 senal:bg-senal-acento senal:text-senal-oscuro senal:ring-senal-oscuro/15' },
   estatal: { etiqueta: 'Estatal', clase: 'bg-sky-50 text-sky-800 ring-sky-600/20 senal:bg-senal-oscuro senal:text-white senal:ring-senal-oscuro' },
@@ -191,4 +191,29 @@ function capitalizar(texto: string): string {
       return (romano?.[1] ?? '') + resultado
     })
     .join(' ')
+}
+
+/** "Consulté: [Municipal · Oaxaca de Juárez] [Estatal · Oaxaca]": qué reglamentos cubre la respuesta. */
+export function Ambitos({ ambitos, etiqueta = 'Consulté' }: { ambitos: { nivel: Nivel; nombre: string }[]; etiqueta?: string }) {
+  if (ambitos.length === 0) return null
+
+  return (
+    <p className="flex flex-wrap items-center gap-1.5 text-xs text-stone-500">
+      <span className="font-medium senal:font-bold senal:uppercase senal:tracking-wider">{etiqueta}:</span>
+      {ambitos.map((a) => (
+        <PlacaNivel key={a.nivel} nivel={a.nivel} lugar={a.nombre} />
+      ))}
+    </p>
+  )
+}
+
+/** Placa del nivel de un reglamento (municipal, estatal o federal), con el lugar si se da. */
+export function PlacaNivel({ nivel, lugar }: { nivel: Nivel; lugar?: string }) {
+  const { etiqueta, clase } = NIVEL[nivel]
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ring-1 ring-inset senal:rounded-md senal:font-bold senal:tracking-wide ${clase}`}>
+      <span className="senal:uppercase">{etiqueta}</span>
+      {lugar && <span className="font-normal opacity-80 senal:font-semibold senal:opacity-90">· {lugar}</span>}
+    </span>
+  )
 }

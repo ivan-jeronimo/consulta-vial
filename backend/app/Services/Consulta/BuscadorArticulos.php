@@ -2,6 +2,7 @@
 
 namespace App\Services\Consulta;
 
+use App\Enums\NivelJurisdiccion;
 use App\Models\ReglamentoArticulo;
 use App\Services\Embeddings\EmbeddingService;
 use Illuminate\Support\Collection;
@@ -51,7 +52,7 @@ class BuscadorArticulos
         }
 
         arsort($puntajes);
-        $puntajes = array_slice($puntajes, 0, $limite, preserve_keys: true);
+        $puntajes = $this->repartir($puntajes, $limite, $municipioId);
 
         return ReglamentoArticulo::query()
             ->with('documento.estado', 'documento.municipio')
@@ -59,6 +60,42 @@ class BuscadorArticulos
             ->each(fn (ReglamentoArticulo $a) => $a->setAttribute('relevancia', round($puntajes[$a->id], 5)))
             ->sortByDesc('relevancia')
             ->values();
+    }
+
+    /**
+     * Con un municipio elegido se consultan dos reglamentos: el estatal (aplica en
+     * todo el estado) y el municipal. Cada uno se queda con sus mejores artículos
+     * (hasta `minimo_por_nivel`), para que el más extenso no deje fuera al otro;
+     * el resto de los lugares se llena por relevancia.
+     *
+     * @param  array<int, float>  $puntajes  ordenados de mayor a menor
+     * @return array<int, float>
+     */
+    private function repartir(array $puntajes, int $limite, ?int $municipioId): array
+    {
+        if (! $municipioId || count($puntajes) <= $limite) {
+            return array_slice($puntajes, 0, $limite, preserve_keys: true);
+        }
+
+        $niveles = ReglamentoArticulo::query()->whereKey(array_keys($puntajes))->toBase()->pluck('nivel', 'id');
+        $minimo = (int) config('rag.busqueda.minimo_por_nivel');
+        $elegidos = [];
+
+        foreach ([NivelJurisdiccion::Estatal, NivelJurisdiccion::Municipal] as $nivel) {
+            $delNivel = array_filter($puntajes, fn (int $id) => $niveles[$id] === $nivel->value, ARRAY_FILTER_USE_KEY);
+            $elegidos += array_slice($delNivel, 0, $minimo, preserve_keys: true);
+        }
+
+        foreach ($puntajes as $id => $puntaje) {
+            if (count($elegidos) >= $limite) {
+                break;
+            }
+            $elegidos[$id] ??= $puntaje;
+        }
+
+        arsort($elegidos);
+
+        return $elegidos;
     }
 
     /**

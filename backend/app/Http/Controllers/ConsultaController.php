@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\NivelJurisdiccion;
+use App\Models\DocumentoReglamento;
 use App\Models\Estado;
 use App\Models\Municipio;
 use App\Models\ReglamentoArticulo;
@@ -88,6 +89,8 @@ class ConsultaController extends Controller
             'consulta_id' => $consultaId,
             'pregunta' => $datos['pregunta'],
             'ubicacion' => $ubicacion,
+            // Qué reglamentos se consultaron, para que quede claro en el chat.
+            'ambitos' => $this->ambitos($estado, $municipio),
             'respuesta' => $respuesta?->texto,
             'aviso' => $aviso,
             'modelo' => $respuesta?->modelo,
@@ -123,6 +126,32 @@ class ConsultaController extends Controller
         abort_unless(Str::isUuid($consulta) && $registro->valorar($consulta, (bool) $datos['util']), 404);
 
         return response()->json(['ok' => true]);
+    }
+
+    /**
+     * Niveles con normativa consultable para la ubicación: el estatal también
+     * cuenta cuando se elige un municipio.
+     *
+     * @return list<array{nivel: string, nombre: string}>
+     */
+    private function ambitos(?Estado $estado, ?Municipio $municipio): array
+    {
+        $niveles = DocumentoReglamento::consultable()
+            ->where(fn ($q) => $q
+                ->where('nivel', NivelJurisdiccion::Federal)
+                ->when($estado, fn ($q) => $q->orWhere(fn ($q) => $q->where('nivel', NivelJurisdiccion::Estatal)->where('estado_id', $estado->id)))
+                ->when($municipio, fn ($q) => $q->orWhere(fn ($q) => $q->where('nivel', NivelJurisdiccion::Municipal)->where('municipio_id', $municipio->id))))
+            ->toBase()->distinct()->pluck('nivel');
+
+        return collect([
+            NivelJurisdiccion::Municipal->value => $municipio?->nombre,
+            NivelJurisdiccion::Estatal->value => $estado?->nombre,
+            NivelJurisdiccion::Federal->value => 'México',
+        ])
+            ->filter(fn (?string $nombre, string $nivel) => $nombre && $niveles->contains($nivel))
+            ->map(fn (string $nombre, string $nivel) => ['nivel' => $nivel, 'nombre' => $nombre])
+            ->values()
+            ->all();
     }
 
     /** @return list<array{id: int, nombre: string}> */

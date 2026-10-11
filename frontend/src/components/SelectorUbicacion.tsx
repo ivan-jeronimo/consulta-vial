@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import type { Cobertura, Ubicacion } from '../api'
+import type { Cobertura, Estado, Ubicacion } from '../api'
+import { PlacaNivel } from './Fuentes'
 
 interface Props {
   cobertura: Cobertura
@@ -8,7 +9,8 @@ interface Props {
   onCancelar?: () => void
 }
 
-const SOLO_ESTATAL = ''
+/** Todo el estado (solo el reglamento estatal) o un municipio (el suyo y el estatal). */
+type Alcance = 'estado' | 'municipio'
 
 export function SelectorUbicacion({ cobertura, inicial, onElegir, onCancelar }: Props) {
   const [estadoId, setEstadoId] = useState<number | null>(
@@ -16,16 +18,22 @@ export function SelectorUbicacion({ cobertura, inicial, onElegir, onCancelar }: 
   )
   const estado = cobertura.estados.find((e) => e.id === estadoId) ?? null
 
-  const [municipio, setMunicipio] = useState<string>(
-    inicial?.municipioId != null ? String(inicial.municipioId) : primeraOpcion(estado),
+  const [alcance, setAlcance] = useState<Alcance>(
+    inicial ? (inicial.municipioId === null ? 'estado' : 'municipio') : alcanceInicial(estado),
   )
+  const [municipioId, setMunicipioId] = useState<number | null>(inicial?.municipioId ?? estado?.municipios[0]?.id ?? null)
 
   function cambiarEstado(id: number) {
+    const nuevo = cobertura.estados.find((e) => e.id === id) ?? null
     setEstadoId(id)
-    setMunicipio(primeraOpcion(cobertura.estados.find((e) => e.id === id) ?? null))
+    setMunicipioId(nuevo?.municipios[0]?.id ?? null)
+    setAlcance(alcanceInicial(nuevo))
   }
 
-  const puedeContinuar = estado !== null && (municipio !== SOLO_ESTATAL || estado.tiene_reglamento_estatal)
+  const municipio = estado?.municipios.find((m) => m.id === municipioId) ?? null
+  const puedeContinuar = estado !== null && (alcance === 'estado' ? estado.tiene_reglamento_estatal : municipio !== null)
+  // Solo se pregunta "todo el estado o un municipio" cuando hay de dónde elegir.
+  const hayEleccion = estado !== null && estado.tiene_reglamento_estatal && estado.municipios.length > 0
 
   if (cobertura.estados.length === 0) {
     return (
@@ -45,11 +53,11 @@ export function SelectorUbicacion({ cobertura, inicial, onElegir, onCancelar }: 
       </p>
 
       <form
-        className="mt-6 space-y-4"
+        className="mt-6 space-y-5"
         onSubmit={(e) => {
           e.preventDefault()
           if (estado && puedeContinuar) {
-            onElegir({ estadoId: estado.id, municipioId: municipio === SOLO_ESTATAL ? null : Number(municipio) })
+            onElegir({ estadoId: estado.id, municipioId: alcance === 'estado' ? null : municipio!.id })
           }
         }}
       >
@@ -67,22 +75,48 @@ export function SelectorUbicacion({ cobertura, inicial, onElegir, onCancelar }: 
           </select>
         </Campo>
 
-        {estado && (estado.municipios.length > 0 || estado.tiene_reglamento_estatal) && (
-          <Campo etiqueta="Municipio">
-            <select className={estiloSelect} value={municipio} onChange={(e) => setMunicipio(e.target.value)}>
-              {estado.municipios.map((m) => (
-                <option key={m.id} value={m.id}>{m.nombre}</option>
-              ))}
-              {estado.tiene_reglamento_estatal && (
-                <option value={SOLO_ESTATAL}>
-                  {estado.municipios.length > 0 ? 'Otro municipio (solo reglamento estatal)' : 'Todo el estado'}
-                </option>
-              )}
-            </select>
-          </Campo>
+        {estado && hayEleccion && (
+          <fieldset>
+            <legend className="mb-1.5 text-sm font-medium text-stone-700">¿Qué quieres consultar?</legend>
+            <div className="space-y-2">
+              <Opcion
+                elegida={alcance === 'estado'}
+                onElegir={() => setAlcance('estado')}
+                titulo={`Todo el estado de ${estado.nombre}`}
+                detalle="Solo el reglamento estatal. Para circular en cualquier parte del estado."
+              />
+              <Opcion
+                elegida={alcance === 'municipio'}
+                onElegir={() => setAlcance('municipio')}
+                titulo="Un municipio"
+                detalle="El reglamento de tu municipio y también el estatal, que aplica ahí mismo."
+              >
+                {alcance === 'municipio' && <SelectMunicipio estado={estado} valor={municipioId} onCambiar={setMunicipioId} />}
+              </Opcion>
+            </div>
+          </fieldset>
         )}
 
-        <div className="flex gap-3 pt-2">
+        {/* Sin reglamento estatal: el municipio es la única opción. */}
+        {estado && !estado.tiene_reglamento_estatal && estado.municipios.length > 0 && (
+          <div>
+            <span className="mb-1.5 block text-sm font-medium text-stone-700">Municipio</span>
+            <SelectMunicipio estado={estado} valor={municipioId} onCambiar={setMunicipioId} />
+          </div>
+        )}
+
+        {estado && puedeContinuar && (
+          <div className="rounded-xl bg-stone-50 px-4 py-3 senal:rounded-lg senal:bg-senal-fondo">
+            <p className="text-xs font-medium text-stone-500 senal:font-bold senal:uppercase senal:tracking-wider">Se consultará</p>
+            <p className="mt-1.5 flex flex-wrap gap-1.5">
+              {alcance === 'municipio' && municipio && <PlacaNivel nivel="municipal" lugar={municipio.nombre} />}
+              {estado.tiene_reglamento_estatal && <PlacaNivel nivel="estatal" lugar={estado.nombre} />}
+              {cobertura.hay_normativa_federal && <PlacaNivel nivel="federal" lugar="México" />}
+            </p>
+          </div>
+        )}
+
+        <div className="flex gap-3 pt-1">
           <button
             type="submit"
             disabled={!puedeContinuar}
@@ -105,8 +139,66 @@ export function SelectorUbicacion({ cobertura, inicial, onElegir, onCancelar }: 
   )
 }
 
-function primeraOpcion(estado: { municipios: { id: number }[] } | null): string {
-  return estado?.municipios[0] ? String(estado.municipios[0].id) : SOLO_ESTATAL
+/** Con municipios disponibles se propone el primero; si no, todo el estado. */
+function alcanceInicial(estado: Estado | null): Alcance {
+  return estado && estado.municipios.length > 0 ? 'municipio' : 'estado'
+}
+
+function Opcion({
+  elegida,
+  onElegir,
+  titulo,
+  detalle,
+  children,
+}: {
+  elegida: boolean
+  onElegir: () => void
+  titulo: string
+  detalle: string
+  children?: React.ReactNode
+}) {
+  return (
+    <div
+      className={`rounded-xl border px-4 py-3 transition ${
+        elegida
+          ? 'border-marca-600 bg-marca-50/60 ring-1 ring-marca-600 senal:border-2 senal:border-senal-oscuro senal:bg-white senal:ring-0'
+          : 'border-stone-200 hover:border-stone-300 senal:border-2 senal:border-senal-borde senal:hover:border-senal-oscuro/50'
+      }`}
+    >
+      <label className="flex cursor-pointer items-start gap-3">
+        <input
+          type="radio"
+          name="alcance"
+          checked={elegida}
+          onChange={onElegir}
+          className="mt-1 size-4 shrink-0 accent-marca-700 senal:accent-senal-oscuro"
+        />
+        <span>
+          <span className="block font-medium text-stone-900 senal:font-bold senal:text-senal-oscuro">{titulo}</span>
+          <span className="block text-sm text-stone-600">{detalle}</span>
+        </span>
+      </label>
+      {children && <div className="mt-3 pl-7">{children}</div>}
+    </div>
+  )
+}
+
+function SelectMunicipio({ estado, valor, onCambiar }: { estado: Estado; valor: number | null; onCambiar: (id: number) => void }) {
+  return (
+    <span className="relative block">
+      <select
+        aria-label="Municipio"
+        className={estiloSelect}
+        value={valor ?? ''}
+        onChange={(e) => onCambiar(Number(e.target.value))}
+      >
+        {estado.municipios.map((m) => (
+          <option key={m.id} value={m.id}>{m.nombre}</option>
+        ))}
+      </select>
+      <Flecha />
+    </span>
+  )
 }
 
 const estiloSelect =
@@ -118,16 +210,22 @@ function Campo({ etiqueta, children }: { etiqueta: string; children: React.React
       <span className="mb-1.5 block text-sm font-medium text-stone-700">{etiqueta}</span>
       <span className="relative block">
         {children}
-        <svg
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 right-3 size-5 -translate-y-1/2 text-stone-500"
-        >
-          <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
-        </svg>
+        <Flecha />
       </span>
     </label>
+  )
+}
+
+function Flecha() {
+  return (
+    <svg
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      aria-hidden="true"
+      className="pointer-events-none absolute top-1/2 right-3 size-5 -translate-y-1/2 text-stone-500"
+    >
+      <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+    </svg>
   )
 }
 
