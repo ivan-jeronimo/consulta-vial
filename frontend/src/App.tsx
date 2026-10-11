@@ -12,17 +12,19 @@ const CLAVE_UBICACION = 'consulta-vial:ubicacion'
 let siguienteId = 0
 const nuevoId = () => String(++siguienteId)
 
-// Preguntas que sorprenden (la respuesta no es obvia) y que los reglamentos cargados
-// sí responden. Se muestran 4 al azar en cada visita.
+// Preguntas que sorprenden (la respuesta no es obvia). Todas tienen artículo expreso en
+// el reglamento ESTATAL de Oaxaca (el chat incrustado arranca en el estado) y no chocan
+// con el municipal; p. ej. "niño de 12 años adelante" o "motos entre carriles" sí chocan
+// y quedan fuera. Se muestran 4 al azar en cada visita.
 const EJEMPLOS = [
-  '¿Un niño de 12 años puede ir adelante si lleva el cinturón puesto?',
-  '¿Puedo llevar a mi perro en el asiento del copiloto?',
-  '¿Las motos pueden pasar entre los carriles cuando hay tráfico?',
-  '¿Me pueden multar por tocar el claxon?',
-  '¿Puedo andar en bicicleta con audífonos?',
-  '¿A cuántos metros de la salida de un hospital no me puedo estacionar?',
-  '¿Es obligatorio usar chaleco reflejante en moto de noche?',
+  '¿Tengo que hacer alto total al salir de mi cochera?',
+  '¿Puedo llevar a mi perro en la bicicleta?',
+  '¿Puedo llevar a un niño sentado adelante de mí en la bicicleta?',
   '¿Cuándo puede una moto subirse a la banqueta?',
+  '¿Es obligatorio usar chaleco reflejante en moto?',
+  '¿Puedo usar el celular mientras ando en bicicleta?',
+  '¿El que va atrás en la moto también tiene que usar casco?',
+  '¿Puedo andar en bicicleta por la banqueta?',
 ]
 const MOSTRADOS = 4
 
