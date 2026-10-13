@@ -12,6 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Sleep;
 use Tests\TestCase;
 
 class ConsultaTest extends TestCase
@@ -193,8 +194,31 @@ class ConsultaTest extends TestCase
             ->assertJsonPath('modelo', 'modelo-b');
     }
 
+    public function test_si_ambos_modelos_fallan_un_momento_lo_reintenta_en_una_segunda_vuelta(): void
+    {
+        // Lo que pasó en producción: el preferido saturado (503) y el respaldo con respuesta malformada.
+        Sleep::fake();
+        config(['rag.llm.provider' => 'gemini', 'rag.llm.model' => 'modelo-a, modelo-b', 'rag.embeddings.gemini.key' => 'g-prueba']);
+        $llamadasA = 0;
+        Http::fake([
+            // Primera vuelta: el cliente HTTP ya hace 3 intentos; a la segunda vuelta responde.
+            '*/models/modelo-a:generateContent' => function () use (&$llamadasA) {
+                return ++$llamadasA <= 3
+                    ? Http::response(['error' => ['code' => 503, 'message' => 'high demand']], 503)
+                    : Http::response(['candidates' => [['content' => ['parts' => [['text' => 'Ya pudo responder']]]]]]);
+            },
+            '*/models/modelo-b:generateContent' => Http::response(['candidates' => [['finishReason' => 'MALFORMED_RESPONSE']]]),
+        ]);
+
+        $this->postJson('/api/consulta', ['municipio' => 'Oaxaca de Juárez', 'pregunta' => 'vuelta a la derecha continua'])
+            ->assertOk()
+            ->assertJsonPath('respuesta', 'Ya pudo responder')
+            ->assertJsonPath('modelo', 'modelo-a');
+    }
+
     public function test_si_el_llm_falla_devuelve_los_articulos_con_aviso(): void
     {
+        Sleep::fake();
         config(['rag.llm.provider' => 'gemini', 'rag.llm.model' => 'modelo-a', 'rag.embeddings.gemini.key' => 'g-prueba']);
         Http::fake(['*' => Http::response(['error' => ['code' => 503]], 503)]);
 

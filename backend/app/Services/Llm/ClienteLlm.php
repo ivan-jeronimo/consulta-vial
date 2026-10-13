@@ -2,8 +2,11 @@
 
 namespace App\Services\Llm;
 
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Sleep;
 use RuntimeException;
 
 /**
@@ -42,29 +45,38 @@ class ClienteLlm
     public function generar(string $instrucciones, string $mensaje, bool $json = false, ?string $razonamiento = null): array
     {
         $modelos = $this->modelos();
+        $error = new RuntimeException('Sin modelos configurados.');
 
-        foreach ($modelos as $i => $modelo) {
-            try {
-                $texto = match ($this->proveedor()) {
-                    'anthropic' => $this->anthropic($instrucciones, $mensaje, $modelo),
-                    'openai' => $this->openai($instrucciones, $mensaje, $modelo, $json),
-                    'gemini' => $this->gemini($instrucciones, $mensaje, $modelo, $json, $razonamiento ?? config('rag.llm.razonamiento')),
-                    default => throw new RuntimeException('LLM no configurado.'),
-                };
+        // Las fallas de Gemini (saturado, respuesta malformada) suelen durar segundos:
+        // si todos los modelos fallan así, se espera un poco y se da una segunda vuelta
+        // antes de rendirse (entonces el chat muestra solo los artículos).
+        foreach ([1, 2] as $vuelta) {
+            if ($vuelta === 2) {
+                Sleep::for(config('rag.llm.espera_segunda_vuelta'))->seconds();
+            }
 
-                return ['texto' => $texto, 'modelo' => $modelo];
-            } catch (\Throwable $e) {
-                $ultimo = $i === array_key_last($modelos);
+            foreach ($modelos as $modelo) {
+                try {
+                    $texto = match ($this->proveedor()) {
+                        'anthropic' => $this->anthropic($instrucciones, $mensaje, $modelo),
+                        'openai' => $this->openai($instrucciones, $mensaje, $modelo, $json),
+                        'gemini' => $this->gemini($instrucciones, $mensaje, $modelo, $json, $razonamiento ?? config('rag.llm.razonamiento')),
+                        default => throw new RuntimeException('LLM no configurado.'),
+                    };
 
-                if ($ultimo || ! $this->esReintentable($e)) {
-                    throw $e;
+                    return ['texto' => $texto, 'modelo' => $modelo];
+                } catch (\Throwable $e) {
+                    if (! $this->esReintentable($e)) {
+                        throw $e;
+                    }
+
+                    $error = $e;
+                    Log::warning("LLM {$modelo} no disponible (vuelta {$vuelta}), se prueba el siguiente", ['error' => mb_substr($e->getMessage(), 0, 300)]);
                 }
-
-                Log::warning("LLM {$modelo} no disponible, se usa el respaldo", ['error' => mb_substr($e->getMessage(), 0, 300)]);
             }
         }
 
-        throw new RuntimeException('Sin modelos configurados.');
+        throw $error;
     }
 
     private function anthropic(string $instrucciones, string $mensaje, string $modelo): string
@@ -129,8 +141,13 @@ class ClienteLlm
             ->implode('');
 
         if ($texto === '') {
-            // Típico: el razonamiento interno agotó maxOutputTokens (finishReason MAX_TOKENS).
-            throw new RuntimeException('Gemini devolvió una respuesta vacía ('.$respuesta->json('candidates.0.finishReason').'). Sube LLM_MAX_TOKENS.');
+            $motivo = (string) $respuesta->json('candidates.0.finishReason');
+
+            // MAX_TOKENS: el razonamiento interno agotó maxOutputTokens; reintentar no sirve.
+            // Otros (MALFORMED_RESPONSE…) son fallas pasajeras de Gemini: se reintenta.
+            throw $motivo === 'MAX_TOKENS'
+                ? new RuntimeException('Gemini devolvió una respuesta vacía (MAX_TOKENS). Sube LLM_MAX_TOKENS.')
+                : new RespuestaVaciaLlm("Gemini devolvió una respuesta vacía ({$motivo}).");
         }
 
         return $texto;
@@ -151,9 +168,13 @@ class ClienteLlm
         };
     }
 
+    /** Fallas pasajeras: saturación, cuota, red o una respuesta vacía que no fue por MAX_TOKENS. */
     private function esReintentable(\Throwable $e): bool
     {
-        return ! $e instanceof \Illuminate\Http\Client\RequestException
-            || in_array($e->response->status(), [429, 500, 502, 503, 504, 529], true);
+        return match (true) {
+            $e instanceof RequestException => in_array($e->response->status(), [429, 500, 502, 503, 504, 529], true),
+            $e instanceof ConnectionException, $e instanceof RespuestaVaciaLlm => true,
+            default => false,
+        };
     }
 }

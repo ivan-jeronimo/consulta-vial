@@ -50,6 +50,9 @@ return [
         'max_tokens' => (int) env('LLM_MAX_TOKENS', 4096),
         // Nivel de razonamiento para modelos Gemini 3 (low | high); vacío = el del modelo.
         'razonamiento' => env('LLM_THINKING', 'low'),
+        // Si todos los modelos fallan por algo pasajero (saturación, respuesta malformada),
+        // se espera esto (segundos) y se intenta otra vuelta antes de rendirse.
+        'espera_segunda_vuelta' => (int) env('LLM_ESPERA_REINTENTO', 2),
 
         'anthropic' => [
             'key' => env('ANTHROPIC_API_KEY'),
