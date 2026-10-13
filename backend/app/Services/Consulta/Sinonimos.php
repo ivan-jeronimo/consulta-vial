@@ -26,6 +26,10 @@ class Sinonimos
         '/\b(ninos?|nina|menores?|bebe|hijos?)\b/' => 'menores de edad niños',
         '/\bestacion(ar|arme|arse|o)\b/' => 'estacionamiento estacionar',
         '/\b(cochera|garage|garaje)\b/' => 'cochera entrada salida de vehículos',
+        '/\b(auriculares?|audifonos?|musica|headphones?)\b/' => 'audífonos aparato reproductor de música',
+        '/\b(perros?|perritos?|gatos?|mascotas?)\b/' => 'mascotas animales canastillas',
+        '/\bfiltr(ar|an|o|ando)\b|\bentre (los )?(carros|coches|autos|carriles)\b/' => 'circular entre carriles centro del carril',
+        '/\brebas(e|es|ar|o|an)\b|\badelantar\b/' => 'rebasar rebase por la izquierda',
     ];
 
     public static function expandir(string $pregunta): string

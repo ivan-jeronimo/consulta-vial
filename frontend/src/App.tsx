@@ -14,9 +14,9 @@ let siguienteId = 0
 const nuevoId = () => String(++siguienteId)
 
 // Preguntas que sorprenden (la respuesta no es obvia). Todas tienen artículo expreso en
-// el reglamento ESTATAL de Oaxaca (el chat incrustado arranca en el estado) y no chocan
-// con el municipal; p. ej. "niño de 12 años adelante" o "motos entre carriles" sí chocan
-// y quedan fuera. Se muestran 4 al azar en cada visita.
+// el reglamento ESTATAL de Oaxaca (el chat incrustado arranca en el estado). Si el
+// municipal dice algo distinto (p. ej. motos entre carriles), la respuesta lo explica
+// porque con municipio se consultan los dos. Se muestran 4 al azar en cada visita.
 const EJEMPLOS = [
   '¿Tengo que hacer alto total al salir de mi cochera?',
   '¿Puedo llevar a mi perro en la bicicleta?',
@@ -26,7 +26,14 @@ const EJEMPLOS = [
   '¿Puedo usar el celular mientras ando en bicicleta?',
   '¿El que va atrás en la moto también tiene que usar casco?',
   '¿Puedo andar en bicicleta por la banqueta?',
+  '¿Los motociclistas pueden "filtrar" entre los carros?',
+  '¿Por dónde se deben hacer los rebases?',
 ]
+// Solo las responde el reglamento de ese municipio (el estatal no las trata):
+// aparecen únicamente cuando ese municipio es el lugar elegido.
+const EJEMPLOS_MUNICIPIO: Record<string, string[]> = {
+  'Oaxaca de Juárez': ['¿Puedo usar auriculares mientras conduzco bici?'],
+}
 const MOSTRADOS = 4
 
 export default function App() {
@@ -133,6 +140,8 @@ export default function App() {
             <div className="flex-1 space-y-6 py-6">
               {mensajes.length === 0 ? (
                 <Bienvenida
+                  // Al cambiar de lugar se vuelven a elegir los ejemplos (los hay solo de un municipio).
+                  key={nombreUbicacion(cobertura, ubicacionValida)!}
                   lugar={nombreUbicacion(cobertura, ubicacionValida)!}
                   ambitos={ambitosDe(cobertura, ubicacionValida)}
                   onCambiar={() => setEligiendo(true)}
@@ -209,7 +218,10 @@ function Bienvenida({
   onEjemplo: (pregunta: string) => void
 }) {
   // Al azar una vez por visita (no cambian mientras la persona lee).
-  const [ejemplos] = useState(() => [...EJEMPLOS].sort(() => Math.random() - 0.5).slice(0, MOSTRADOS))
+  const [ejemplos] = useState(() => {
+    const municipio = ambitos.find((a) => a.nivel === 'municipal')?.nombre
+    return [...EJEMPLOS, ...(municipio ? (EJEMPLOS_MUNICIPIO[municipio] ?? []) : [])].sort(() => Math.random() - 0.5).slice(0, MOSTRADOS)
+  })
 
   return (
     <div className={incrustado ? 'pt-2' : 'pt-6 sm:pt-12'}>
