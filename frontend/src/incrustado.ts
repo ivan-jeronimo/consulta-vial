@@ -34,6 +34,9 @@ export const origen = valor('origen', /^[\w-]{1,40}$/)
 
 export const estadoInicial = Number(valor('estado', /^\d{1,4}$/)) || null
 
+/** Municipio de arranque (?municipio=id): se consulta su reglamento y también el estatal. */
+export const municipioInicial = Number(valor('municipio', /^\d{1,6}$/)) || null
+
 /** Cambia el color de la marca (variables de Tailwind --color-marca-*) por el del sitio que incrusta. */
 export function aplicarColor() {
   const color = valor('color', /^[0-9a-f]{6}$/i)

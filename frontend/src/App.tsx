@@ -4,7 +4,7 @@ import { CampoPregunta } from './components/CampoPregunta'
 import { VistaMensaje, type Mensaje } from './components/Mensaje'
 import { fraseAmbitos } from './components/Fuentes'
 import { SelectorUbicacion } from './components/SelectorUbicacion'
-import { EN_PRUEBA, estadoInicial, incrustado, marca } from './incrustado'
+import { EN_PRUEBA, estadoInicial, incrustado, marca, municipioInicial } from './incrustado'
 
 const CLAVE_UBICACION = 'consulta-vial:ubicacion'
 
@@ -14,7 +14,7 @@ let siguienteId = 0
 const nuevoId = () => String(++siguienteId)
 
 // Preguntas que sorprenden (la respuesta no es obvia). Todas tienen artículo expreso en
-// el reglamento ESTATAL de Oaxaca (el chat incrustado arranca en el estado). Si el
+// el reglamento ESTATAL de Oaxaca (por si eligen "todo el estado"). Si el
 // municipal dice algo distinto (p. ej. motos entre carriles), la respuesta lo explica
 // porque con municipio se consultan los dos.
 //
@@ -331,8 +331,9 @@ function nombreUbicacion(cobertura: Cobertura, ubicacion: Ubicacion): string | n
 }
 
 function leerUbicacion(): Ubicacion | null {
-  // Incrustado con ?estado=…: arranca en ese estado si la persona no ha elegido otra ubicación.
-  const inicial = estadoInicial ? { estadoId: estadoInicial, municipioId: null } : null
+  // Incrustado con ?estado=…[&municipio=…]: arranca ahí si la persona no ha elegido otra
+  // ubicación. Con municipio se consultan su reglamento y el estatal (abarca más preguntas).
+  const inicial = estadoInicial ? { estadoId: estadoInicial, municipioId: municipioInicial } : null
   try {
     const guardada = localStorage.getItem(CLAVE_UBICACION)
     return guardada ? (JSON.parse(guardada) as Ubicacion) : inicial
