@@ -136,23 +136,77 @@ function TarjetaArticulo({ grupo, abiertaInicial }: { grupo: GrupoArticulo; abie
               {a.texto}
             </p>
           ))}
-          {grupo.url && (
-            <a
-              href={grupo.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-sm font-medium text-marca-700 underline underline-offset-2 hover:text-marca-800 senal:font-bold senal:text-senal-oscuro senal:decoration-senal-acento senal:decoration-2"
-            >
-              {grupo.tipo === 'manual' ? 'Ver la guía completa' : `Ver ${grupo.tipo === 'ley' ? 'la ley completa' : 'el reglamento completo'}`}
-              <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="size-4">
-                <path fillRule="evenodd" d="M4.25 5.5a.75.75 0 0 0-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75v-4a.75.75 0 0 1 1.5 0v4A2.25 2.25 0 0 1 12.75 17h-8.5A2.25 2.25 0 0 1 2 14.75v-8.5A2.25 2.25 0 0 1 4.25 4h5a.75.75 0 0 1 0 1.5h-5Zm7.25-.75a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0V6.56l-5.22 5.22a.75.75 0 1 1-1.06-1.06l5.22-5.22h-1.69a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" />
-              </svg>
-              <span className="sr-only">(se abre en otra pestaña)</span>
-            </a>
-          )}
+          {grupo.url && <EnlaceOficial url={grupo.url} tipo={grupo.tipo} reglamento={capitalizar(grupo.reglamento)} />}
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * "Ver el reglamento completo": antes de salir se avisa a dónde se va (el sitio
+ * oficial, con su dominio a la vista) y la persona confirma. La confirmación es
+ * un enlace real, para que el navegador no la trate como ventana emergente.
+ */
+function EnlaceOficial({ url, tipo, reglamento }: { url: string; tipo: TipoDocumento; reglamento: string }) {
+  const [avisando, setAvisando] = useState(false)
+  const texto = tipo === 'manual' ? 'Ver la guía completa' : `Ver ${tipo === 'ley' ? 'la ley completa' : 'el reglamento completo'}`
+  let sitio = url
+  try {
+    sitio = new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    // URL rara: se muestra tal cual.
+  }
+
+  if (!avisando) {
+    return (
+      <button
+        type="button"
+        onClick={() => setAvisando(true)}
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-marca-700 underline underline-offset-2 hover:text-marca-800 senal:font-bold senal:text-senal-oscuro senal:decoration-senal-acento senal:decoration-2"
+      >
+        {texto}
+        <IconoSalir />
+      </button>
+    )
+  }
+
+  return (
+    <div role="alert" className="rounded-xl border border-stone-200 bg-white p-3.5 text-sm senal:rounded-lg senal:border-2 senal:border-senal-oscuro">
+      <p className="font-medium text-stone-900 senal:font-bold senal:text-senal-oscuro">Vas a salir del asistente</p>
+      <p className="mt-1 leading-relaxed text-stone-600">
+        Te llevaremos al enlace oficial donde está publicado <span className="text-stone-800">{reglamento}</span>, en{' '}
+        <span className="font-semibold text-stone-800 senal:text-senal-oscuro">{sitio}</span>. Se abre en otra pestaña, fuera de este asistente.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => setAvisando(false)}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-marca-700 px-3.5 py-2 font-medium text-white hover:bg-marca-800 senal:rounded-full senal:bg-senal-acento senal:font-bold senal:text-senal-oscuro senal:hover:bg-senal-acento/85"
+        >
+          Ir al documento oficial
+          <IconoSalir />
+          <span className="sr-only">(se abre en otra pestaña)</span>
+        </a>
+        <button
+          type="button"
+          onClick={() => setAvisando(false)}
+          className="rounded-lg px-3.5 py-2 font-medium text-stone-700 hover:bg-stone-100 senal:rounded-full"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function IconoSalir() {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="size-4">
+      <path fillRule="evenodd" d="M4.25 5.5a.75.75 0 0 0-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75v-4a.75.75 0 0 1 1.5 0v4A2.25 2.25 0 0 1 12.75 17h-8.5A2.25 2.25 0 0 1 2 14.75v-8.5A2.25 2.25 0 0 1 4.25 4h5a.75.75 0 0 1 0 1.5h-5Zm7.25-.75a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0V6.56l-5.22 5.22a.75.75 0 1 1-1.06-1.06l5.22-5.22h-1.69a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" />
+    </svg>
   )
 }
 
