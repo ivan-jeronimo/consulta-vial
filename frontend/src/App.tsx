@@ -16,18 +16,27 @@ const nuevoId = () => String(++siguienteId)
 // Preguntas que sorprenden (la respuesta no es obvia). Todas tienen artículo expreso en
 // el reglamento ESTATAL de Oaxaca (el chat incrustado arranca en el estado). Si el
 // municipal dice algo distinto (p. ej. motos entre carriles), la respuesta lo explica
-// porque con municipio se consultan los dos. Se muestran 4 al azar en cada visita.
-const EJEMPLOS = [
-  '¿Tengo que hacer alto total al salir de mi cochera?',
+// porque con municipio se consultan los dos.
+//
+// Se muestran 4: primero las PRINCIPALES que apliquen al lugar, en su orden, y si
+// faltan se completan al azar con las demás.
+const PRINCIPALES = [
+  '¿Puedo usar auriculares mientras conduzco bici?',
   '¿Puedo llevar a mi perro en la bicicleta?',
+  '¿Los motociclistas pueden "filtrar" entre los carros?',
+  '¿Por dónde se deben hacer los rebases?',
+]
+const EJEMPLOS = [
+  '¿Puedo llevar a mi perro en la bicicleta?',
+  '¿Los motociclistas pueden "filtrar" entre los carros?',
+  '¿Por dónde se deben hacer los rebases?',
+  '¿Tengo que hacer alto total al salir de mi cochera?',
   '¿Puedo llevar a un niño sentado adelante de mí en la bicicleta?',
   '¿Cuándo puede una moto subirse a la banqueta?',
   '¿Es obligatorio usar chaleco reflejante en moto?',
   '¿Puedo usar el celular mientras ando en bicicleta?',
   '¿El que va atrás en la moto también tiene que usar casco?',
   '¿Puedo andar en bicicleta por la banqueta?',
-  '¿Los motociclistas pueden "filtrar" entre los carros?',
-  '¿Por dónde se deben hacer los rebases?',
 ]
 // Solo las responde el reglamento de ese municipio (el estatal no las trata):
 // aparecen únicamente cuando ese municipio es el lugar elegido.
@@ -220,7 +229,10 @@ function Bienvenida({
   // Al azar una vez por visita (no cambian mientras la persona lee).
   const [ejemplos] = useState(() => {
     const municipio = ambitos.find((a) => a.nivel === 'municipal')?.nombre
-    return [...EJEMPLOS, ...(municipio ? (EJEMPLOS_MUNICIPIO[municipio] ?? []) : [])].sort(() => Math.random() - 0.5).slice(0, MOSTRADOS)
+    const disponibles = [...EJEMPLOS, ...(municipio ? (EJEMPLOS_MUNICIPIO[municipio] ?? []) : [])]
+    const principales = PRINCIPALES.filter((p) => disponibles.includes(p))
+    const resto = disponibles.filter((p) => !principales.includes(p)).sort(() => Math.random() - 0.5)
+    return [...principales, ...resto].slice(0, MOSTRADOS)
   })
 
   return (
