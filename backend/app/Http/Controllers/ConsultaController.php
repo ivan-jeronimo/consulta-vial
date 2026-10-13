@@ -91,6 +91,8 @@ class ConsultaController extends Controller
             'ubicacion' => $ubicacion,
             // Qué reglamentos se consultaron, para que quede claro en el chat.
             'ambitos' => $this->ambitos($estado, $municipio),
+            // Preguntas que le quedan hoy a esta persona.
+            'cupo' => $limite->cupo($datos['visitante'] ?? null, (string) $request->ip()),
             'respuesta' => $respuesta?->texto,
             'aviso' => $aviso,
             'modelo' => $respuesta?->modelo,
@@ -116,6 +118,15 @@ class ConsultaController extends Controller
                 'texto' => $a->contenido,
             ]),
         ]);
+    }
+
+    /** Cuántas preguntas le quedan hoy a esta persona (para mostrarlo antes de que pregunte). */
+    public function cupo(Request $request, LimiteConsultas $limite): JsonResponse
+    {
+        $datos = $request->validate(['visitante' => ['nullable', 'uuid']]);
+
+        return response()->json($limite->cupo($datos['visitante'] ?? null, (string) $request->ip()))
+            ->header('Cache-Control', 'no-store');
     }
 
     /** 👍 / 👎 sobre una respuesta, hasta 24 horas después de recibirla. */

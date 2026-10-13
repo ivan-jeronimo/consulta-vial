@@ -238,8 +238,10 @@ class ConsultaTest extends TestCase
             'visitante' => $visitante, 'origen' => 'andantes',
         ];
 
-        $this->postJson('/api/consulta', $pregunta($ana))->assertOk();
-        $this->postJson('/api/consulta', $pregunta($ana))->assertOk();
+        $this->getJson("/api/consultas/cupo?visitante={$ana}")->assertExactJson(['limite' => 2, 'restantes' => 2]);
+        $this->postJson('/api/consulta', $pregunta($ana))->assertOk()->assertJsonPath('cupo', ['limite' => 2, 'restantes' => 1]);
+        $this->postJson('/api/consulta', $pregunta($ana))->assertOk()->assertJsonPath('cupo.restantes', 0);
+        $this->getJson("/api/consultas/cupo?visitante={$ana}")->assertJsonPath('restantes', 0);
         $this->postJson('/api/consulta', $pregunta($ana))
             ->assertTooManyRequests()
             ->assertJsonPath('message', 'Llegaste al límite de 2 preguntas por hoy. Vuelve mañana para seguir preguntando.');

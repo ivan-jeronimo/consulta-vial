@@ -39,6 +39,12 @@ export interface Fuente {
   texto: string
 }
 
+export interface Cupo {
+  /** Preguntas al día por persona. */
+  limite: number
+  restantes: number
+}
+
 export interface Ambito {
   nivel: Nivel
   /** El lugar: municipio, estado o "México". */
@@ -52,6 +58,8 @@ export interface RespuestaConsulta {
   ubicacion: string
   /** Reglamentos que se consultaron (con municipio: el municipal y también el estatal). */
   ambitos: Ambito[]
+  /** Preguntas que le quedan hoy, contando esta. */
+  cupo?: Cupo
   respuesta: string | null
   aviso: string | null
   modelo: string | null
@@ -66,7 +74,10 @@ export interface Ubicacion {
 }
 
 /** Error con un mensaje ya listo para mostrarse al usuario. */
-export class ErrorConsulta extends Error {}
+export class ErrorConsulta extends Error {
+  /** La persona ya usó todas sus preguntas de hoy. */
+  limiteDiario = false
+}
 
 async function pedir<T>(url: string, init?: RequestInit): Promise<T> {
   let respuesta: Response
@@ -87,9 +98,11 @@ async function pedir<T>(url: string, init?: RequestInit): Promise<T> {
   if (respuesta.status === 429) {
     // El límite diario trae su propio mensaje; el de por minuto, no.
     const cuerpo = await respuesta.json().catch(() => null)
-    throw new ErrorConsulta(
+    const error = new ErrorConsulta(
       cuerpo?.limite_diario ? cuerpo.message : 'Hiciste muchas consultas seguidas. Espera un minuto e inténtalo de nuevo.',
     )
+    error.limiteDiario = !!cuerpo?.limite_diario
+    throw error
   }
 
   if (respuesta.status === 422) {
@@ -116,6 +129,11 @@ export function consultar(pregunta: string, ubicacion: Ubicacion): Promise<Respu
       origen,
     }),
   })
+}
+
+export function obtenerCupo(): Promise<Cupo> {
+  const visitante = idVisitante()
+  return pedir(`/api/consultas/cupo${visitante ? `?visitante=${visitante}` : ''}`)
 }
 
 export function valorar(consultaId: string, util: boolean): Promise<unknown> {

@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Route;
 // Endpoints públicos del bot. Cada consulta cuesta (embedding + LLM): se limita por IP.
 Route::get('territorios', TerritorioController::class)->middleware('throttle:60,1');
 Route::post('consulta', ConsultaController::class)->middleware('throttle:20,1');
+Route::get('consultas/cupo', [ConsultaController::class, 'cupo'])->middleware('throttle:60,1');
 Route::post('consultas/{consulta}/valoracion', [ConsultaController::class, 'valorar'])->middleware('throttle:30,1');
 
 // Texto de la normativa para sistemas cliente (solo lectura, token por cliente).

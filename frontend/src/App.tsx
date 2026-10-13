@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { consultar, ErrorConsulta, obtenerCobertura, type Ambito, type Cobertura, type Ubicacion } from './api'
+import { consultar, ErrorConsulta, obtenerCobertura, obtenerCupo, type Ambito, type Cobertura, type Cupo, type Ubicacion } from './api'
 import { CampoPregunta } from './components/CampoPregunta'
 import { VistaMensaje, type Mensaje } from './components/Mensaje'
-import { Ambitos } from './components/Fuentes'
+import { fraseAmbitos } from './components/Fuentes'
 import { SelectorUbicacion } from './components/SelectorUbicacion'
 import { EN_PRUEBA, estadoInicial, incrustado, marca } from './incrustado'
 
@@ -35,12 +35,15 @@ export default function App() {
   const [ubicacion, setUbicacion] = useState<Ubicacion | null>(leerUbicacion)
   const [eligiendo, setEligiendo] = useState(false)
   const [mensajes, setMensajes] = useState<Mensaje[]>([])
+  const [cupo, setCupo] = useState<Cupo | null>(null)
   const final = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     obtenerCobertura()
       .then(setCobertura)
       .catch((e) => setErrorCarga(e instanceof ErrorConsulta ? e.message : 'No se pudo cargar la información.'))
+    // Si falla, simplemente no se muestra el contador.
+    obtenerCupo().then(setCupo).catch(() => undefined)
   }, [])
 
   useEffect(() => {
@@ -72,8 +75,10 @@ export default function App() {
     try {
       const resultado = await consultar(pregunta, en)
       actualizado = { id: idRespuesta, rol: 'asistente', estado: 'listo', resultado }
+      if (resultado.cupo) setCupo(resultado.cupo)
     } catch (e) {
       const error = e instanceof ErrorConsulta ? e.message : 'Ocurrió un error inesperado.'
+      if (e instanceof ErrorConsulta && e.limiteDiario) setCupo((c) => c && { ...c, restantes: 0 })
       actualizado = { id: idRespuesta, rol: 'asistente', estado: 'error', error, pregunta }
     }
 
@@ -142,8 +147,9 @@ export default function App() {
             </div>
 
             <div className="sticky bottom-0 -mx-4 bg-gradient-to-t from-stone-50 from-70% to-transparent px-4 pt-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
-              <CampoPregunta deshabilitado={enCurso} onEnviar={preguntar} />
-              <p className="mt-2 text-center text-xs text-stone-500">
+              <CampoPregunta deshabilitado={enCurso || cupo?.restantes === 0} onEnviar={preguntar} />
+              {cupo && <IndicadorCupo cupo={cupo} />}
+              <p className="mt-1.5 text-center text-xs text-stone-500">
                 {EN_PRUEBA && <span className="font-semibold text-amber-700">Versión de prueba: puede equivocarse. </span>}
                 Información orientativa basada en los reglamentos publicados; revisa los artículos citados. No sustituye asesoría legal.
                 Tus preguntas se guardan de forma anónima para mejorar el servicio.
@@ -210,16 +216,23 @@ function Bienvenida({
       <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl senal:font-titulos senal:text-[2.1rem] senal:font-extrabold senal:uppercase senal:leading-[0.95] senal:tracking-normal">
         ¿Qué quieres saber del reglamento?
       </h1>
+      {/* Qué se consulta, dicho en una frase: con municipio, también el estatal. */}
       <p className="mt-2 text-stone-600">
-        Pregunta sobre las reglas de tránsito en <span className="font-medium text-stone-800">{lugar}</span>.
-        Cada respuesta cita los artículos en los que se basa.
-      </p>
-      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-        <Ambitos ambitos={ambitos} etiqueta="Se consulta" />
-        <button type="button" onClick={onCambiar} className="text-xs font-medium text-marca-700 underline underline-offset-2 senal:font-bold senal:text-senal-oscuro senal:decoration-senal-acento senal:decoration-2">
-          Cambiar
+        {ambitos.length > 0 ? (
+          <>
+            Respondo con <span className="font-medium text-stone-800 senal:text-senal-oscuro">{fraseAmbitos(ambitos)}</span>, y cito los
+            artículos en que me baso.
+          </>
+        ) : (
+          <>
+            Pregunta sobre las reglas de tránsito en <span className="font-medium text-stone-800">{lugar}</span>. Cada respuesta cita los
+            artículos en los que se basa.
+          </>
+        )}{' '}
+        <button type="button" onClick={onCambiar} className="font-medium text-marca-700 underline underline-offset-2 senal:font-bold senal:text-senal-oscuro senal:decoration-senal-acento senal:decoration-2">
+          Cambiar lugar
         </button>
-      </div>
+      </p>
       {EN_PRUEBA && (
         <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 senal:border-l-4 senal:border-senal-acento senal:bg-white senal:text-stone-700">
           <span className="font-semibold">Estamos probando este asistente.</span> Puede equivocarse; por ejemplo, al decidir qué
@@ -242,6 +255,33 @@ function Bienvenida({
           </button>
         ))}
       </div>
+    </div>
+  )
+}
+
+/** "Te quedan 3 de 5 preguntas hoy", con una marca por pregunta (como rayas del carril). */
+function IndicadorCupo({ cupo }: { cupo: Cupo }) {
+  if (cupo.limite <= 0) return null
+  const usadas = cupo.limite - cupo.restantes
+
+  return (
+    <div className="mt-2 flex items-center justify-center gap-2 text-xs text-stone-500" aria-live="polite">
+      {cupo.restantes === 0 ? (
+        <span className="font-medium text-amber-800">Llegaste a tus {cupo.limite} preguntas de hoy. Vuelve mañana.</span>
+      ) : (
+        <span>
+          Te {cupo.restantes === 1 ? 'queda' : 'quedan'} <span className="font-semibold text-stone-700 senal:text-senal-oscuro">{cupo.restantes}</span> de{' '}
+          {cupo.limite} preguntas hoy
+        </span>
+      )}
+      <span aria-hidden="true" className="flex gap-0.5">
+        {Array.from({ length: cupo.limite }, (_, i) => (
+          <span
+            key={i}
+            className={`h-1.5 w-3 rounded-full ${i < usadas ? 'bg-stone-300 senal:bg-senal-borde' : 'bg-marca-600 senal:bg-senal-acento'}`}
+          />
+        ))}
+      </span>
     </div>
   )
 }

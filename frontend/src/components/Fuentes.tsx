@@ -194,17 +194,30 @@ function capitalizar(texto: string): string {
 }
 
 /** "Consulté: [Municipal · Oaxaca de Juárez] [Estatal · Oaxaca]": qué reglamentos cubre la respuesta. */
-export function Ambitos({ ambitos, etiqueta = 'Consulté' }: { ambitos: { nivel: Nivel; nombre: string }[]; etiqueta?: string }) {
+export function Ambitos({ ambitos, inicio = 'Consulté' }: { ambitos: { nivel: Nivel; nombre: string }[]; inicio?: string }) {
   if (ambitos.length === 0) return null
 
   return (
-    <p className="flex flex-wrap items-center gap-1.5 text-xs text-stone-500">
-      <span className="font-medium senal:font-bold senal:uppercase senal:tracking-wider">{etiqueta}:</span>
-      {ambitos.map((a) => (
-        <PlacaNivel key={a.nivel} nivel={a.nivel} lugar={a.nombre} />
-      ))}
+    <p className="flex items-start gap-1.5 text-xs leading-relaxed text-stone-500">
+      <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="mt-0.5 size-3.5 shrink-0 senal:text-senal-oscuro">
+        <path d="M10.75 16.82A7.462 7.462 0 0 1 15 15.5c.71 0 1.396.098 2.046.282A.75.75 0 0 0 18 15.06v-11a.75.75 0 0 0-.546-.721A9.006 9.006 0 0 0 15 3a8.963 8.963 0 0 0-4.25 1.065V16.82ZM9.25 4.065A8.963 8.963 0 0 0 5 3c-.85 0-1.673.118-2.454.339A.75.75 0 0 0 2 4.06v11a.75.75 0 0 0 .954.721A7.506 7.506 0 0 1 5 15.5c1.579 0 3.042.487 4.25 1.32V4.065Z" />
+      </svg>
+      <span>
+        {inicio} {fraseAmbitos(ambitos)}.
+      </span>
     </p>
   )
+}
+
+/**
+ * "el reglamento municipal de Oaxaca de Juárez y el estatal de Oaxaca". Una
+ * frase se acomoda sola en cualquier ancho; las placas se partían en dos renglones.
+ */
+export function fraseAmbitos(ambitos: { nivel: Nivel; nombre: string }[]): string {
+  const partes = ambitos.map((a, i) =>
+    a.nivel === 'federal' ? 'la normativa federal' : `${i === 0 ? 'el reglamento' : 'el'} ${a.nivel} de ${a.nombre}`,
+  )
+  return new Intl.ListFormat('es', { type: 'conjunction' }).format(partes)
 }
 
 /** Placa del nivel de un reglamento (municipal, estatal o federal), con el lugar si se da. */
