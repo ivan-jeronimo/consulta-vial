@@ -15,6 +15,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Notifications\Notification;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -33,6 +34,12 @@ class DocumentoReglamentosTable
                     ->searchable()
                     ->wrap()
                     ->description(fn (DocumentoReglamento $r) => $r->archivo_nombre_original),
+                IconColumn::make('url_publica')
+                    ->label('Enlace')
+                    ->state(fn (DocumentoReglamento $record) => filled($record->url_publica))
+                    ->boolean()
+                    ->tooltip(fn (DocumentoReglamento $record) => $record->url_publica ?: 'Falta el enlace público: el chat no podrá enlazar a este documento.')
+                    ->url(fn (DocumentoReglamento $record) => $record->url_publica, shouldOpenInNewTab: true),
                 TextColumn::make('tipo')->badge()->sortable(),
                 TextColumn::make('nivel')->badge()->sortable(),
                 TextColumn::make('estado.nombre')->label('Estado')->placeholder('—')->sortable(),

@@ -107,6 +107,8 @@ class ConsultaController extends Controller
                 'tipo' => $a->documento->tipo,
                 'nivel' => $a->documento->nivel,
                 'anio' => $a->documento->anio,
+                // Para ir al documento completo (Periódico Oficial, sitio del gobierno).
+                'url' => $a->documento->url_publica,
                 'capitulo' => $a->capitulo,
                 'seccion' => $a->seccion,
                 'articulo' => $a->articulo,

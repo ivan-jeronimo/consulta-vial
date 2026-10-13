@@ -43,6 +43,16 @@ class DocumentoReglamentoForm
                             ->maxLength(255)
                             ->columnSpanFull(),
 
+                        TextInput::make('url_publica')
+                            ->label('Enlace público')
+                            ->placeholder('https://www.periodicooficial.oaxaca.gob.mx/…')
+                            ->url()
+                            ->maxLength(2048)
+                            ->required()
+                            ->suffixIcon('heroicon-m-arrow-top-right-on-square')
+                            ->helperText('Dónde puede leerlo cualquiera: Periódico Oficial o sitio del gobierno. El chat enlaza aquí desde cada artículo que cita.')
+                            ->columnSpanFull(),
+
                         ToggleButtons::make('tipo')
                             ->label('Tipo de documento')
                             ->options(TipoDocumento::class)

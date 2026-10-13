@@ -26,6 +26,8 @@ export interface Fuente {
   tipo: TipoDocumento
   nivel: Nivel
   anio: number
+  /** Dónde leer el documento completo (fuente pública); null si aún no se capturó. */
+  url?: string | null
   capitulo: string | null
   seccion: string | null
   articulo: string | null

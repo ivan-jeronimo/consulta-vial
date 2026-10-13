@@ -25,6 +25,7 @@ class GuardarReglamentoRequest extends FormRequest
             'municipio_id' => ['nullable', 'integer', 'exists:municipios,id'],
             'anio' => [$requerido, 'integer', 'between:1900,2100'],
             'fecha_publicacion' => ['nullable', 'date'],
+            'url_publica' => ['nullable', 'url', 'max:2048'],
             'estatus_vigencia' => ['sometimes', Rule::enum(EstatusVigencia::class)],
             'reemplaza_a_id' => ['nullable', 'integer', 'exists:documentos_reglamentos,id'],
 

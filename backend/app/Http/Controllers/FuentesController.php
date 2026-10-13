@@ -15,7 +15,7 @@ class FuentesController extends Controller
 {
     public function documentos(): JsonResponse
     {
-        $documentos = DocumentoReglamento::consultable()->orderBy('titulo')->get(['id', 'titulo', 'tipo', 'nivel', 'anio']);
+        $documentos = DocumentoReglamento::consultable()->orderBy('titulo')->get(['id', 'titulo', 'tipo', 'nivel', 'anio', 'url_publica']);
 
         // Capítulos en el orden del documento, para filtrar al generar.
         $capitulos = ReglamentoArticulo::query()
@@ -34,6 +34,7 @@ class FuentesController extends Controller
                 'tipo' => $d->tipo->value,
                 'nivel' => $d->nivel->value,
                 'anio' => $d->anio,
+                'url' => $d->url_publica,
                 'capitulos' => $capitulos->get($d->id, collect())->pluck('capitulo')->values(),
             ]),
         ]);

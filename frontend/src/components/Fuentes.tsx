@@ -25,6 +25,8 @@ interface GrupoArticulo {
   capitulo: string | null
   seccion: string | null
   contexto: string | null
+  /** Documento completo en su fuente pública (Periódico Oficial, sitio del gobierno). */
+  url: string | null
   apartados: Fuente[]
 }
 
@@ -56,6 +58,7 @@ function agrupar(fuentes: Fuente[]): GrupoArticulo[] {
       capitulo: f.capitulo,
       seccion: f.seccion,
       contexto: f.contexto,
+      url: f.url ?? null,
       apartados: [],
     }
     grupo.apartados.push(f)
@@ -133,6 +136,20 @@ function TarjetaArticulo({ grupo, abiertaInicial }: { grupo: GrupoArticulo; abie
               {a.texto}
             </p>
           ))}
+          {grupo.url && (
+            <a
+              href={grupo.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm font-medium text-marca-700 underline underline-offset-2 hover:text-marca-800 senal:font-bold senal:text-senal-oscuro senal:decoration-senal-acento senal:decoration-2"
+            >
+              {grupo.tipo === 'manual' ? 'Ver la guía completa' : `Ver ${grupo.tipo === 'ley' ? 'la ley completa' : 'el reglamento completo'}`}
+              <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" className="size-4">
+                <path fillRule="evenodd" d="M4.25 5.5a.75.75 0 0 0-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75v-4a.75.75 0 0 1 1.5 0v4A2.25 2.25 0 0 1 12.75 17h-8.5A2.25 2.25 0 0 1 2 14.75v-8.5A2.25 2.25 0 0 1 4.25 4h5a.75.75 0 0 1 0 1.5h-5Zm7.25-.75a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v3.5a.75.75 0 0 1-1.5 0V6.56l-5.22 5.22a.75.75 0 1 1-1.06-1.06l5.22-5.22h-1.69a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" />
+              </svg>
+              <span className="sr-only">(se abre en otra pestaña)</span>
+            </a>
+          )}
         </div>
       )}
     </div>

@@ -46,7 +46,7 @@ class ConsultaTest extends TestCase
         $registro = app(RegistroReglamentos::class);
 
         $registro->registrar(
-            ['titulo' => 'Reglamento Municipal', 'nivel' => 'municipal', 'estado_id' => $oaxaca->id, 'municipio_id' => $this->municipio->id, 'anio' => 2026],
+            ['titulo' => 'Reglamento Municipal', 'nivel' => 'municipal', 'estado_id' => $oaxaca->id, 'municipio_id' => $this->municipio->id, 'anio' => 2026, 'url_publica' => 'https://www.municipiodeoaxaca.gob.mx/reglamento.pdf'],
             $registro->guardarTexto(self::MUNICIPAL),
         );
         $registro->registrar(
@@ -67,7 +67,9 @@ class ConsultaTest extends TestCase
 
         $respuesta->assertJsonPath('ubicacion', 'Oaxaca de Juárez, Oaxaca')
             ->assertJsonPath('respuesta', null)
-            ->assertJsonPath('fuentes.0.articulo', '54');
+            ->assertJsonPath('fuentes.0.articulo', '54')
+            // Enlace al documento completo para ir a la fuente.
+            ->assertJsonPath('fuentes.0.url', 'https://www.municipiodeoaxaca.gob.mx/reglamento.pdf');
 
         $articulos = collect($respuesta->json('fuentes'))->pluck('articulo');
         $this->assertContains('10', $articulos, 'Debe incluir la norma estatal aplicable.');

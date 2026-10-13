@@ -98,6 +98,7 @@ class PanelReglamentosTest extends TestCase
                 'nivel' => 'estatal',
                 'estado_id' => $this->oaxaca->id,
                 'anio' => 2025,
+                'url_publica' => 'https://periodicooficial.oaxaca.gob.mx/reglamento.pdf',
                 'fuente' => 'archivo',
                 'archivo_path' => UploadedFile::fake()->createWithContent('reglamento.txt', self::TEXTO),
             ])
@@ -124,7 +125,7 @@ class PanelReglamentosTest extends TestCase
                 'texto' => self::TEXTO,
             ])
             ->call('create')
-            ->assertHasFormErrors(['municipio_id' => 'required']);
+            ->assertHasFormErrors(['municipio_id' => 'required', 'url_publica' => 'required']);
 
         $this->assertSame(0, DocumentoReglamento::count());
     }
@@ -208,6 +209,7 @@ class PanelReglamentosTest extends TestCase
                 'estado_id' => $this->oaxaca->id,
                 'municipio_id' => $this->municipio->id,
                 'anio' => 2025,
+                'url_publica' => 'https://periodicooficial.oaxaca.gob.mx/reglamento.pdf',
                 'fuente' => 'texto',
                 'texto' => self::TEXTO,
                 ...$datos,
