@@ -13,8 +13,8 @@ const CLAVE_UBICACION = 'consulta-vial:ubicacion'
 let siguienteId = 0
 const nuevoId = () => String(++siguienteId)
 
-// Preguntas que sorprenden (la respuesta no es obvia). Todas tienen artículo expreso en
-// el reglamento ESTATAL de Oaxaca (por si eligen "todo el estado"). Si el
+// Preguntas que sorprenden (la respuesta no es obvia). Todas tienen respuesta expresa en
+// el reglamento ESTATAL de Oaxaca o en la Guía (por si eligen "todo el estado"). Si el
 // municipal dice algo distinto (p. ej. motos entre carriles), la respuesta lo explica
 // porque con municipio se consultan los dos.
 //
@@ -22,12 +22,13 @@ const nuevoId = () => String(++siguienteId)
 // faltan se completan al azar con las demás.
 const PRINCIPALES = [
   '¿Puedo usar auriculares mientras conduzco bici?',
-  '¿Puedo llevar a mi perro en la bicicleta?',
+  '¿Puedo estacionar mi moto pegada a un carro?',
+  '¿Quién puede usar el área de espera de los semáforos?',
   '¿Los motociclistas pueden "filtrar" entre los carros?',
   '¿Por dónde se deben hacer los rebases?',
 ]
 const EJEMPLOS = [
-  '¿Puedo llevar a mi perro en la bicicleta?',
+  '¿Quién puede usar el área de espera de los semáforos?',
   '¿Los motociclistas pueden "filtrar" entre los carros?',
   '¿Por dónde se deben hacer los rebases?',
   '¿Tengo que hacer alto total al salir de mi cochera?',
@@ -41,7 +42,10 @@ const EJEMPLOS = [
 // Solo las responde el reglamento de ese municipio (el estatal no las trata):
 // aparecen únicamente cuando ese municipio es el lugar elegido.
 const EJEMPLOS_MUNICIPIO: Record<string, string[]> = {
-  'Oaxaca de Juárez': ['¿Puedo usar auriculares mientras conduzco bici?'],
+  'Oaxaca de Juárez': [
+    '¿Puedo usar auriculares mientras conduzco bici?',
+    '¿Puedo estacionar mi moto pegada a un carro?',
+  ],
 }
 const MOSTRADOS = 4
 
