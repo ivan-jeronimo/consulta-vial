@@ -43,6 +43,13 @@ class DocumentoReglamentoForm
                             ->maxLength(255)
                             ->columnSpanFull(),
 
+                        TextInput::make('emisor')
+                            ->label('Quién lo emite')
+                            ->placeholder('Ej. Secretaría de Movilidad del Estado de Oaxaca (SEMOVI)')
+                            ->maxLength(255)
+                            ->helperText('La dependencia o autoridad que lo expide. Va en la cita de las fuentes (chat y pregunta diaria).')
+                            ->columnSpanFull(),
+
                         TextInput::make('url_publica')
                             ->label('Enlace público')
                             ->placeholder('https://www.periodicooficial.oaxaca.gob.mx/…')
@@ -51,6 +58,13 @@ class DocumentoReglamentoForm
                             ->required()
                             ->suffixIcon('heroicon-m-arrow-top-right-on-square')
                             ->helperText('Dónde puede leerlo cualquiera: Periódico Oficial o sitio del gobierno. El chat enlaza aquí desde cada artículo que cita.')
+                            ->columnSpanFull(),
+
+                        TextInput::make('publicado_en')
+                            ->label('Publicado oficialmente en')
+                            ->placeholder('Ej. Periódico Oficial del Estado de Oaxaca, 30/04/2026')
+                            ->maxLength(255)
+                            ->helperText('Opcional. Dónde y cuándo se publicó de forma oficial.')
                             ->columnSpanFull(),
 
                         ToggleButtons::make('tipo')

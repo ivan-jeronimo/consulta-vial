@@ -23,6 +23,8 @@ export interface Cobertura {
 export interface Fuente {
   documento_id: number
   reglamento: string
+  /** Quién expide el documento (dependencia o autoridad); null si aún no se capturó. */
+  emisor?: string | null
   tipo: TipoDocumento
   nivel: Nivel
   anio: number

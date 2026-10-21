@@ -17,8 +17,8 @@ class DocumentoReglamento extends Model
     protected $table = 'documentos_reglamentos';
 
     protected $fillable = [
-        'titulo', 'tipo', 'nivel', 'estado_id', 'municipio_id',
-        'anio', 'fecha_publicacion', 'url_publica', 'estatus_vigencia', 'reemplaza_a_id',
+        'titulo', 'emisor', 'tipo', 'nivel', 'estado_id', 'municipio_id',
+        'anio', 'fecha_publicacion', 'url_publica', 'publicado_en', 'estatus_vigencia', 'reemplaza_a_id',
         'archivo_path', 'archivo_nombre_original', 'archivo_mime', 'archivo_sha256',
         'estatus_procesamiento', 'chunks_count', 'embedding_modelo', 'error_mensaje', 'procesado_at',
         'creado_por',

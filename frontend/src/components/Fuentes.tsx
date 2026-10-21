@@ -27,6 +27,8 @@ interface GrupoArticulo {
   contexto: string | null
   /** Documento completo en su fuente pública (Periódico Oficial, sitio del gobierno). */
   url: string | null
+  /** Quién lo expide (dependencia o autoridad). */
+  emisor: string | null
   apartados: Fuente[]
 }
 
@@ -59,6 +61,7 @@ function agrupar(fuentes: Fuente[]): GrupoArticulo[] {
       seccion: f.seccion,
       contexto: f.contexto,
       url: f.url ?? null,
+      emisor: f.emisor ?? null,
       apartados: [],
     }
     grupo.apartados.push(f)
@@ -136,6 +139,7 @@ function TarjetaArticulo({ grupo, abiertaInicial }: { grupo: GrupoArticulo; abie
               {a.texto}
             </p>
           ))}
+          {grupo.emisor && <p className="text-xs text-stone-500">Expedido por {grupo.emisor}</p>}
           {grupo.url && <EnlaceOficial url={grupo.url} tipo={grupo.tipo} reglamento={capitalizar(grupo.reglamento)} />}
         </div>
       )}

@@ -44,7 +44,14 @@ class FuentesApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.0.id', $this->guia->id)
             ->assertJsonPath('data.0.tipo', 'manual')
-            ->assertJsonPath('data.0.capitulos', ['I.-CONOCIMIENTOS GENERALES', 'II.-SEÑALES DE TRÁNSITO']);
+            ->assertJsonPath('data.0.capitulos', ['I.-CONOCIMIENTOS GENERALES', 'II.-SEÑALES DE TRÁNSITO'])
+            ->assertJsonPath('data.0.emisor', null);
+
+        // Quién lo emite y dónde se publicó van en la cita de la pregunta diaria.
+        $this->guia->update(['emisor' => 'Secretaría de Movilidad del Estado de Oaxaca (SEMOVI)', 'publicado_en' => 'Sitio de SEMOVI, mayo de 2023']);
+        $this->getJson('/api/fuentes/documentos', ['Authorization' => 'Bearer token-otro-cliente'])
+            ->assertJsonPath('data.0.emisor', 'Secretaría de Movilidad del Estado de Oaxaca (SEMOVI)')
+            ->assertJsonPath('data.0.publicado_en', 'Sitio de SEMOVI, mayo de 2023');
     }
 
     public function test_devuelve_los_fragmentos_en_orden_y_filtra_por_capitulo(): void

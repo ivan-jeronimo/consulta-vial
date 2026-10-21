@@ -104,6 +104,7 @@ class ConsultaController extends Controller
             'fuentes' => $fuentes->map(fn (ReglamentoArticulo $a) => [
                 'documento_id' => $a->documento_id,
                 'reglamento' => $a->documento->titulo,
+                'emisor' => $a->documento->emisor,
                 'tipo' => $a->documento->tipo,
                 'nivel' => $a->documento->nivel,
                 'anio' => $a->documento->anio,
