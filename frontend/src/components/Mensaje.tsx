@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Markdown from 'react-markdown'
 import { valorar, type RespuestaConsulta } from '../api'
 import { Ambitos, Fuentes } from './Fuentes'
@@ -217,10 +217,27 @@ function Avatar() {
   )
 }
 
+/** Lo que dice mientras espera: a veces el modelo tarda y conviene avisar que sigue trabajando. */
+const ETAPAS_ESPERA: [number, string][] = [
+  [0, 'Buscando en el reglamento…'],
+  [6, 'Redactando la respuesta…'],
+  [20, 'Está tardando más de lo normal; sigo trabajando…'],
+  [45, 'El servicio de IA está lento ahora. Si no logro redactarla, te mostraré los artículos que encontré.'],
+]
+
 function Cargando() {
+  const [segundos, setSegundos] = useState(0)
+
+  useEffect(() => {
+    const reloj = setInterval(() => setSegundos((s) => s + 1), 1000)
+    return () => clearInterval(reloj)
+  }, [])
+
+  const texto = ETAPAS_ESPERA.filter(([desde]) => segundos >= desde).at(-1)![1]
+
   return (
-    <div className="space-y-2.5" role="status">
-      <p className="text-sm text-stone-500 senal:font-titulos senal:text-base senal:font-bold senal:uppercase senal:tracking-wider senal:text-senal-oscuro">Buscando en el reglamento…</p>
+    <div className="space-y-2.5" role="status" aria-live="polite">
+      <p className="text-sm text-stone-500 senal:font-titulos senal:text-base senal:font-bold senal:uppercase senal:tracking-wider senal:text-senal-oscuro">{texto}</p>
       <div aria-hidden="true" className="carril-buscando hidden w-40 rounded-full senal:block" />
       <div className="h-3 w-11/12 animate-pulse rounded bg-stone-200" />
       <div className="h-3 w-4/5 animate-pulse rounded bg-stone-200" />

@@ -15,6 +15,12 @@ use RuntimeException;
  */
 class ClienteLlm
 {
+    /** Segundos mínimos para que valga la pena empezar otro intento. */
+    private const MINIMO_POR_INTENTO = 5;
+
+    /** Segundos que se espera la respuesta del intento en curso (lo fija generar()). */
+    private int $espera = 25;
+
     public function disponible(): bool
     {
         return $this->proveedor() !== 'none' && filled($this->apiKey());
@@ -46,16 +52,30 @@ class ClienteLlm
     {
         $modelos = $this->modelos();
         $error = new RuntimeException('Sin modelos configurados.');
+        $inicio = microtime(true);
+        $presupuesto = (int) config('rag.llm.presupuesto_segundos');
+        $restante = fn () => $presupuesto - (microtime(true) - $inicio);
 
         // Las fallas de Gemini (saturado, respuesta malformada) suelen durar segundos:
         // si todos los modelos fallan así, se espera un poco y se da una segunda vuelta
-        // antes de rendirse (entonces el chat muestra solo los artículos).
+        // antes de rendirse (entonces el chat muestra solo los artículos). Todo dentro
+        // del presupuesto: el servidor web corta a los 150 s y la persona se desespera antes.
         foreach ([1, 2] as $vuelta) {
             if ($vuelta === 2) {
-                Sleep::for(config('rag.llm.espera_segunda_vuelta'))->seconds();
+                $espera = (int) config('rag.llm.espera_segunda_vuelta');
+                if ($restante() < $espera + self::MINIMO_POR_INTENTO) {
+                    break;
+                }
+                Sleep::for($espera)->seconds();
             }
 
             foreach ($modelos as $modelo) {
+                if ($restante() < self::MINIMO_POR_INTENTO) {
+                    break 2;
+                }
+                // Si Gemini no contesta en este tiempo casi nunca lo hace: mejor pasar al siguiente.
+                $this->espera = (int) min(config('rag.llm.timeout_intento'), $restante());
+
                 try {
                     $texto = match ($this->proveedor()) {
                         'anthropic' => $this->anthropic($instrucciones, $mensaje, $modelo),
@@ -85,8 +105,9 @@ class ClienteLlm
             'x-api-key' => $this->apiKey(),
             'anthropic-version' => '2023-06-01',
         ])
-            ->timeout(90)
-            ->retry(2, 1500, fn ($e) => $this->esReintentable($e), throw: true)
+            ->timeout($this->espera)
+            // Un reintento rápido solo si respondió saturado; si se quedó colgado, se pasa al siguiente modelo.
+            ->retry(2, 1000, fn ($e) => $e instanceof RequestException && $this->esReintentable($e), throw: true)
             ->post(config('rag.llm.anthropic.url').'/messages', [
                 'model' => $modelo,
                 'max_tokens' => config('rag.llm.max_tokens'),
@@ -100,8 +121,9 @@ class ClienteLlm
     private function openai(string $instrucciones, string $mensaje, string $modelo, bool $json): string
     {
         $respuesta = Http::withToken($this->apiKey())
-            ->timeout(90)
-            ->retry(2, 1500, fn ($e) => $this->esReintentable($e), throw: true)
+            ->timeout($this->espera)
+            // Un reintento rápido solo si respondió saturado; si se quedó colgado, se pasa al siguiente modelo.
+            ->retry(2, 1000, fn ($e) => $e instanceof RequestException && $this->esReintentable($e), throw: true)
             ->post(config('rag.embeddings.openai.url').'/chat/completions', [
                 'model' => $modelo,
                 'max_completion_tokens' => config('rag.llm.max_tokens'),
@@ -118,8 +140,9 @@ class ClienteLlm
     private function gemini(string $instrucciones, string $mensaje, string $modelo, bool $json, ?string $razonamiento): string
     {
         $respuesta = Http::withHeaders(['x-goog-api-key' => $this->apiKey()])
-            ->timeout(120)
-            ->retry(2, 1500, fn ($e) => $this->esReintentable($e), throw: true)
+            ->timeout($this->espera)
+            // Un reintento rápido solo si respondió saturado; si se quedó colgado, se pasa al siguiente modelo.
+            ->retry(2, 1000, fn ($e) => $e instanceof RequestException && $this->esReintentable($e), throw: true)
             ->post(config('rag.embeddings.gemini.url')."/models/{$modelo}:generateContent", [
                 'systemInstruction' => ['parts' => [['text' => $instrucciones]]],
                 'contents' => [['role' => 'user', 'parts' => [['text' => $mensaje]]]],

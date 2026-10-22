@@ -53,6 +53,12 @@ return [
         // Si todos los modelos fallan por algo pasajero (saturación, respuesta malformada),
         // se espera esto (segundos) y se intenta otra vuelta antes de rendirse.
         'espera_segunda_vuelta' => (int) env('LLM_ESPERA_REINTENTO', 2),
+        // Segundos que se espera cada intento: si Gemini no contesta en ese tiempo casi
+        // nunca lo hace (tiene colas de 1-4 minutos), y se pasa al siguiente modelo.
+        'timeout_intento' => (int) env('LLM_TIMEOUT_INTENTO', 25),
+        // Tope para redactar la respuesta, sumando todos los intentos. Debe quedar
+        // muy por debajo del read_timeout del servidor web (150 s).
+        'presupuesto_segundos' => (int) env('LLM_PRESUPUESTO', 75),
 
         'anthropic' => [
             'key' => env('ANTHROPIC_API_KEY'),

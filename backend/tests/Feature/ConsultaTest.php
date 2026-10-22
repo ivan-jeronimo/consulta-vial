@@ -9,6 +9,7 @@ use App\Models\Municipio;
 use App\Services\Ingesta\RegistroReglamentos;
 use Database\Seeders\CatalogoTerritorialSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
@@ -214,6 +215,28 @@ class ConsultaTest extends TestCase
             ->assertOk()
             ->assertJsonPath('respuesta', 'Ya pudo responder')
             ->assertJsonPath('modelo', 'modelo-a');
+    }
+
+    public function test_si_el_preferido_se_queda_colgado_pasa_al_respaldo_sin_reintentarlo(): void
+    {
+        // Como en producción: gemini-3.8-flash a veces no contesta (cURL error 28 tras minutos).
+        config(['rag.llm.provider' => 'gemini', 'rag.llm.model' => 'modelo-a, modelo-b', 'rag.embeddings.gemini.key' => 'g-prueba']);
+        $intentosA = 0;
+        Http::fake([
+            '*/models/modelo-a:generateContent' => function () use (&$intentosA) {
+                $intentosA++;
+                throw new ConnectionException('cURL error 28: Operation timed out after 25001 milliseconds');
+            },
+            '*/models/modelo-b:generateContent' => Http::response(['candidates' => [['content' => ['parts' => [['text' => 'Respuesta del respaldo']]]]]]),
+        ]);
+
+        $this->postJson('/api/consulta', ['municipio' => 'Oaxaca de Juárez', 'pregunta' => 'vuelta a la derecha continua'])
+            ->assertOk()
+            ->assertJsonPath('respuesta', 'Respuesta del respaldo')
+            ->assertJsonPath('modelo', 'modelo-b');
+
+        // Un modelo colgado no se reintenta: cada intento así son 25 s de espera.
+        $this->assertSame(1, $intentosA);
     }
 
     public function test_si_el_llm_falla_devuelve_los_articulos_con_aviso(): void
