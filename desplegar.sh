@@ -13,7 +13,8 @@ fi
 . ./.env
 docker network create proxy >/dev/null 2>&1 || true
 
-./dc build
+# --pull: baja la imagen base actualizada (parches de PHP y Alpine).
+./dc build --pull
 ./dc up -d postgres redis
 ./dc run --rm app php artisan migrate --force
 # Se recrean siempre: Compose no siempre detecta que la imagen cambió. La base y Redis no se tocan.

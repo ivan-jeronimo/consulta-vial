@@ -4,7 +4,9 @@
 #   web      → producción: Caddy interno (HTTP) con el chat compilado y lo público de Laravel.
 #              El HTTPS lo pone el Caddy de la puerta del servidor (ver docker/produccion/sitio.caddy).
 
-FROM php:8.3-fpm-alpine AS base
+# Versión fija: con solo "8.3" el build reusa la base que ya tenga el servidor.
+# 8.3.36 corrige PHP2Shell (CVE-2026-109618 y CVE-2026-109619).
+FROM php:8.3.36-fpm-alpine AS base
 
 RUN apk add --no-cache \
         icu-libs libzip libpq \
