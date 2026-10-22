@@ -4,7 +4,7 @@ import { CampoPregunta } from './components/CampoPregunta'
 import { VistaMensaje, type Mensaje } from './components/Mensaje'
 import { fraseAmbitos } from './components/Fuentes'
 import { SelectorUbicacion } from './components/SelectorUbicacion'
-import { EN_PRUEBA, estadoInicial, incrustado, marca, municipioInicial } from './incrustado'
+import { apoyo, EN_PRUEBA, estadoInicial, incrustado, marca, municipioInicial } from './incrustado'
 
 const CLAVE_UBICACION = 'consulta-vial:ubicacion'
 
@@ -171,6 +171,15 @@ export default function App() {
             <div className="sticky bottom-0 -mx-4 bg-gradient-to-t from-stone-50 from-70% to-transparent px-4 pt-6 pb-[max(1rem,env(safe-area-inset-bottom))]">
               <CampoPregunta deshabilitado={enCurso || cupo?.restantes === 0} onEnviar={preguntar} />
               {cupo && <IndicadorCupo cupo={cupo} />}
+              {/* Se pide apoyo solo después de haber ayudado: con al menos una respuesta. */}
+              {apoyo && mensajes.some((m) => m.rol === 'asistente' && m.estado === 'listo') && (
+                <p className="mt-1.5 text-center text-xs font-semibold text-stone-600">
+                  Este asistente es gratis y sin anuncios. Si te sacó de una duda,{' '}
+                  <a href={apoyo} target="_blank" rel="noopener" className="underline underline-offset-2 hover:text-stone-900">
+                    cárgale gasolina ⛽
+                  </a>
+                </p>
+              )}
               <p className="mt-1.5 text-center text-xs text-stone-500">
                 {EN_PRUEBA && <span className="font-semibold text-amber-700">Versión de prueba: puede equivocarse. </span>}
                 Información orientativa basada en los reglamentos publicados; revisa los artículos citados. No sustituye asesoría legal.

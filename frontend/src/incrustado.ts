@@ -9,6 +9,7 @@
  * - fondo:   color de fondo en hex, sin # (el del sitio que incrusta).
  * - fuente:  tipografía del sitio, de una lista cerrada (FUENTES); los títulos usan su versión condensada.
  * - tema:    "senaletica": asfalto, amarillo de señal y títulos condensados (variante senal: de index.css).
+ * - apoyo:   página de Ko-fi del sitio; tras la primera respuesta, una línea invita a apoyar.
  */
 const parametros = new URLSearchParams(location.search)
 
@@ -33,6 +34,9 @@ const valor = (nombre: string, patron: RegExp) => {
 export const origen = valor('origen', /^[\w-]{1,40}$/)
 
 export const estadoInicial = Number(valor('estado', /^\d{1,4}$/)) || null
+
+/** Página de Ko-fi del sitio que incrusta (?apoyo=…): solo de ko-fi.com, para no enlazar a cualquier lado. */
+export const apoyo = valor('apoyo', /^https:\/\/ko-fi\.com\/[\w-]{1,60}\/?$/)
 
 /** Municipio de arranque (?municipio=id): se consulta su reglamento y también el estatal. */
 export const municipioInicial = Number(valor('municipio', /^\d{1,6}$/)) || null
