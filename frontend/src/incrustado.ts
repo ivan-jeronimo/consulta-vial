@@ -9,7 +9,7 @@
  * - fondo:   color de fondo en hex, sin # (el del sitio que incrusta).
  * - fuente:  tipografía del sitio, de una lista cerrada (FUENTES); los títulos usan su versión condensada.
  * - tema:    "senaletica": asfalto, amarillo de señal y títulos condensados (variante senal: de index.css).
- * - apoyo:   página de Ko-fi del sitio; tras la primera respuesta, una línea invita a apoyar.
+ * - apoyo:   página para apoyar al sitio (en el mismo sitio que incrusta, o Ko-fi); tras la primera respuesta, una línea invita a apoyar.
  */
 const parametros = new URLSearchParams(location.search)
 
@@ -35,8 +35,20 @@ export const origen = valor('origen', /^[\w-]{1,40}$/)
 
 export const estadoInicial = Number(valor('estado', /^\d{1,4}$/)) || null
 
-/** Página de Ko-fi del sitio que incrusta (?apoyo=…): solo de ko-fi.com, para no enlazar a cualquier lado. */
-export const apoyo = valor('apoyo', /^https:\/\/ko-fi\.com\/[\w-]{1,60}\/?$/)
+/**
+ * Página para apoyar al sitio que incrusta (?apoyo=…). Para no enlazar a cualquier lado: solo una página
+ * del mismo sitio que abrió el chat (su origen llega en document.referrer) o una de ko-fi.com.
+ */
+export const apoyo = (() => {
+  const v = valor('apoyo', /^https:\/\/[^\s]{1,200}$/)
+  if (!v) return null
+  if (/^https:\/\/ko-fi\.com\/[\w-]{1,60}\/?$/.test(v)) return v
+  try {
+    return document.referrer && new URL(v).origin === new URL(document.referrer).origin ? v : null
+  } catch {
+    return null
+  }
+})()
 
 /** Municipio de arranque (?municipio=id): se consulta su reglamento y también el estatal. */
 export const municipioInicial = Number(valor('municipio', /^\d{1,6}$/)) || null
